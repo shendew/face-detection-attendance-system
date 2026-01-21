@@ -1,0 +1,223 @@
+
+import customtkinter as ctk
+from tkinter import filedialog, messagebox, ttk
+from config import COL_LECTURERS
+from database.db_handler import DatabaseHandler
+import os
+import threading
+
+class LecturerFrame(ctk.CTkFrame):
+    def __init__(self, parent, controller):
+        super().__init__(parent)
+        self.controller = controller
+        self.db = DatabaseHandler()
+        self.selected_image_path = None
+
+        self.grid_columnconfigure(1, weight=1)
+        self.grid_rowconfigure(1, weight=1)
+
+        ctk.CTkLabel(self, text="Manage Lecturers", font=("Roboto Medium", 20)).grid(row=0, column=0, pady=10, sticky="w", padx=20)
+
+        # --- LEFT: FORM ---
+        self.form_frame = ctk.CTkScrollableFrame(self, label_text="Add New Lecturer", width=400)
+        self.form_frame.grid(row=1, column=0, sticky="nsew", padx=20, pady=10)
+        self.form_frame.grid_columnconfigure(1, weight=1)
+
+        self.entries = {}
+        self.create_entry("Lecturer ID", 0, state="readonly")
+        self.create_entry("Lecturer Name", 1)
+        self.create_entry("Email", 2)
+
+        self.btn_image = ctk.CTkButton(self.form_frame, text="Select Photo", command=self.select_image)
+        self.btn_image.grid(row=3, column=0, padx=10, pady=10)
+        self.lbl_image_path = ctk.CTkLabel(self.form_frame, text="No file selected")
+        self.lbl_image_path.grid(row=3, column=1, sticky="w", padx=10)
+
+        self.btn_save = ctk.CTkButton(self.form_frame, text="Save", command=self.save_lecturer)
+        self.btn_save.grid(row=4, column=0, padx=5, pady=20)
+
+        self.btn_update = ctk.CTkButton(self.form_frame, text="Update", command=self.update_lecturer, fg_color="orange", hover_color="darkorange")
+        self.btn_update.grid(row=4, column=1, padx=5, pady=20)
+
+        self.btn_delete = ctk.CTkButton(self.form_frame, text="Delete", command=self.delete_lecturer, fg_color="red", hover_color="darkred")
+        self.btn_delete.grid(row=5, column=0, columnspan=2, pady=5)
+        
+        self.btn_clear = ctk.CTkButton(self.form_frame, text="Clear Form", command=self.clear_form, fg_color="gray", hover_color="darkgray")
+        self.btn_clear.grid(row=6, column=0, columnspan=2, pady=5)
+
+        # --- RIGHT: LIST ---
+        self.list_frame = ctk.CTkFrame(self)
+        self.list_frame.grid(row=1, column=1, sticky="nsew", padx=20, pady=10)
+        self.list_frame.grid_columnconfigure(0, weight=1)
+        self.list_frame.grid_rowconfigure(0, weight=1)
+
+        # Treeview
+        self.tree = ttk.Treeview(self.list_frame, columns=("ID", "Name", "Email"), show="headings")
+        self.tree.heading("ID", text="ID")
+        self.tree.heading("Name", text="Name")
+        self.tree.heading("Email", text="Email")
+        self.tree.column("ID", width=100)
+        self.tree.column("Name", width=200)
+        self.tree.column("Email", width=200)
+        
+        self.tree.grid(row=0, column=0, sticky="nsew")
+        self.tree.bind("<<TreeviewSelect>>", self.on_select)
+
+        self.scrollbar = ttk.Scrollbar(self.list_frame, orient="vertical", command=self.tree.yview)
+        self.tree.configure(yscrollcommand=self.scrollbar.set)
+        self.scrollbar.grid(row=0, column=1, sticky="ns")
+
+        # Progress
+        self.progress = ctk.CTkProgressBar(self.list_frame, height=10, corner_radius=0)
+        self.progress.grid(row=1, column=0, columnspan=2, sticky="ew")
+        self.progress.grid_remove()
+
+    def on_show(self):
+        self.load_lecturers()
+
+    def on_show(self):
+        self.load_lecturers()
+
+    def create_entry(self, label_text, row, state="normal"):
+        ctk.CTkLabel(self.form_frame, text=label_text).grid(row=row, column=0, padx=10, pady=5, sticky="e")
+        entry = ctk.CTkEntry(self.form_frame, state=state)
+        entry.grid(row=row, column=1, padx=10, pady=5, sticky="ew")
+        key = label_text.lower().replace(" ", "_")
+        self.entries[key] = entry
+
+    def select_image(self):
+        file_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg *.png *.jpeg")])
+        if file_path:
+            self.selected_image_path = file_path
+            self.lbl_image_path.configure(text=os.path.basename(file_path))
+
+    def load_lecturers(self):
+        self.progress.grid()
+        self.progress.start()
+        threading.Thread(target=self._fetch_lecturers_thread, daemon=True).start()
+
+    def _fetch_lecturers_thread(self):
+        try:
+            lecturers = self.db.find_all_documents(COL_LECTURERS)
+            self.after(0, lambda: self._update_lecturer_list(lecturers))
+        except Exception as e:
+            print(e)
+            self.after(0, lambda: self._update_lecturer_list(None))
+
+    def _update_lecturer_list(self, lecturers):
+        if not self.winfo_exists():
+            return
+
+        self.progress.stop()
+        self.progress.grid_remove()
+        
+        if lecturers is None:
+             # messagebox.showerror("Error", "Failed to load lecturers.") # Optional, might annoy on startup
+             return
+
+        for item in self.tree.get_children():
+            self.tree.delete(item)
+            
+        for l in lecturers:
+            self.tree.insert("", "end", values=(l.get("lecturerId", ""), l.get("lecturerName", ""), l.get("lecturerEmail", "")))
+
+    def on_select(self, event):
+        selected_item = self.tree.selection()
+        if not selected_item:
+            return
+        
+        item = self.tree.item(selected_item)
+        lec_id = item['values'][0]
+        
+        lecturer = self.db.find_document(COL_LECTURERS, {"lecturerId": str(lec_id)})
+        if lecturer:
+            self.entries["lecturer_id"].configure(state="normal")
+            self.entries["lecturer_id"].delete(0, 'end')
+            self.entries["lecturer_id"].insert(0, lecturer.get("lecturerId", ""))
+            self.entries["lecturer_id"].configure(state="readonly")
+            
+            self.entries["lecturer_name"].delete(0, 'end')
+            self.entries["lecturer_name"].insert(0, lecturer.get("lecturerName", ""))
+            
+            self.entries["email"].delete(0, 'end')
+            self.entries["email"].insert(0, lecturer.get("lecturerEmail", ""))
+            
+            self.selected_image_path = lecturer.get("lecturerPhoto", None)
+            if self.selected_image_path:
+                 self.lbl_image_path.configure(text=os.path.basename(self.selected_image_path))
+            else:
+                 self.lbl_image_path.configure(text="No file selected")
+
+    def update_lecturer(self):
+        lec_id = self.entries["lecturer_id"].get()
+        if not lec_id:
+            messagebox.showwarning("Warning", "Lecturer ID is required.")
+            return
+
+        data = {key: entry.get() for key, entry in self.entries.items()}
+        
+        update_data = {
+            "lecturerName": data["lecturer_name"],
+            "lecturerEmail": data["email"],
+            "lecturerPhoto": self.selected_image_path
+        }
+
+        if self.db.update_document(COL_LECTURERS, {"lecturerId": lec_id}, update_data):
+            messagebox.showinfo("Success", "Lecturer updated successfully!")
+            self.load_lecturers()
+            self.clear_form()
+        else:
+            messagebox.showerror("Error", "Failed to update lecturer.")
+
+    def delete_lecturer(self):
+        lec_id = self.entries["lecturer_id"].get()
+        if not lec_id:
+            messagebox.showwarning("Warning", "Lecturer ID is required.")
+            return
+
+        if messagebox.askyesno("Confirm", "Are you sure you want to delete this lecturer?"):
+            if self.db.delete_document(COL_LECTURERS, {"lecturerId": lec_id}):
+                messagebox.showinfo("Success", "Lecturer deleted.")
+                self.load_lecturers()
+                self.clear_form()
+            else:
+                messagebox.showerror("Error", "Failed to delete lecturer.")
+
+    def save_lecturer(self):
+        data = {key: entry.get() for key, entry in self.entries.items()}
+        
+        # Validation (Exclude ID)
+        required_fields = {k: v for k, v in data.items() if k != "lecturer_id"}
+        if not all(required_fields.values()) or not self.selected_image_path:
+            messagebox.showwarning("Validation Error", "All fields and photo are required!")
+            return
+
+        lec_id = data["lecturer_id"]
+        if not lec_id:
+            lec_id = self.db.get_next_id(COL_LECTURERS, "lecturerId", "LEC")
+
+        lecturer_doc = {
+            "lecturerId": lec_id,
+            "lecturerName": data["lecturer_name"],
+            "lecturerEmail": data["email"],
+            "lecturerPhoto": self.selected_image_path # Storing path for simplicity
+        }
+
+        if self.db.insert_document(COL_LECTURERS, lecturer_doc):
+            messagebox.showinfo("Success", "Lecturer registered successfully!")
+            self.load_lecturers()
+            self.clear_form()
+        else:
+            messagebox.showerror("Database Error", "Failed to save lecturer.")
+
+    def clear_form(self):
+        for entry in self.entries.values():
+            entry.configure(state="normal")
+            entry.delete(0, 'end')
+        
+        # Reset ID to readonly
+        if "lecturer_id" in self.entries:
+            self.entries["lecturer_id"].configure(state="readonly")
+            
+        self.selected_image_path = None
+        self.lbl_image_path.configure(text="No file selected")

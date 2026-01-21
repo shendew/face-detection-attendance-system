@@ -1,0 +1,42 @@
+### Python ###
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.venv/
+venv/
+ENV/
+env/
+
+### Application Specific ###
+# Don't track student images (usually too large/privacy sensitive)
+# If you store images in a local 'data' or 'uploads' folder:
+data/student_images/
+data/lecturer_photos/
+*.jpg
+*.jpeg
+*.png
+# (Optional: Comment out *.jpg if you have UI icons you want to track)
+
+### Database & Secrets ###
+.env
+config.json
+*.db
+*.sqlite3
+
+### Build & Executable (PyInstaller) ###
+build/
+dist/
+*.spec
+*.exe
+*.bin
+
+### IDEs ###
+.vscode/
+.idea/
+*.swp
+*.swo
+
+### OS Specific ###
+.DS_Store
+Thumbs.db
