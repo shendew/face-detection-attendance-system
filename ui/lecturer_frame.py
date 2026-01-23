@@ -5,6 +5,7 @@ from config import COL_LECTURERS
 from database.db_handler import DatabaseHandler
 import os
 import threading
+import PIL.Image
 
 class LecturerFrame(ctk.CTkFrame):
     def __init__(self, parent, controller):
@@ -27,23 +28,28 @@ class LecturerFrame(ctk.CTkFrame):
         self.create_entry("Lecturer ID", 0, state="readonly")
         self.create_entry("Lecturer Name", 1)
         self.create_entry("Email", 2)
+        self.create_entry("Password", 3)
 
         self.btn_image = ctk.CTkButton(self.form_frame, text="Select Photo", command=self.select_image)
-        self.btn_image.grid(row=3, column=0, padx=10, pady=10)
+        self.btn_image.grid(row=4, column=0, padx=10, pady=10)
         self.lbl_image_path = ctk.CTkLabel(self.form_frame, text="No file selected")
-        self.lbl_image_path.grid(row=3, column=1, sticky="w", padx=10)
+        self.lbl_image_path.grid(row=4, column=1, sticky="w", padx=10)
+
+        # Preview
+        self.lbl_preview = ctk.CTkLabel(self.form_frame, text="[No Image]", width=100, height=100)
+        self.lbl_preview.grid(row=5, column=0, columnspan=2, pady=5)
 
         self.btn_save = ctk.CTkButton(self.form_frame, text="Save", command=self.save_lecturer)
-        self.btn_save.grid(row=4, column=0, padx=5, pady=20)
+        self.btn_save.grid(row=6, column=0, padx=5, pady=20)
 
         self.btn_update = ctk.CTkButton(self.form_frame, text="Update", command=self.update_lecturer, fg_color="orange", hover_color="darkorange")
-        self.btn_update.grid(row=4, column=1, padx=5, pady=20)
+        self.btn_update.grid(row=6, column=1, padx=5, pady=20)
 
         self.btn_delete = ctk.CTkButton(self.form_frame, text="Delete", command=self.delete_lecturer, fg_color="red", hover_color="darkred")
-        self.btn_delete.grid(row=5, column=0, columnspan=2, pady=5)
+        self.btn_delete.grid(row=7, column=0, columnspan=2, pady=5)
         
         self.btn_clear = ctk.CTkButton(self.form_frame, text="Clear Form", command=self.clear_form, fg_color="gray", hover_color="darkgray")
-        self.btn_clear.grid(row=6, column=0, columnspan=2, pady=5)
+        self.btn_clear.grid(row=8, column=0, columnspan=2, pady=5)
 
         # --- RIGHT: LIST ---
         self.list_frame = ctk.CTkFrame(self)
@@ -90,6 +96,19 @@ class LecturerFrame(ctk.CTkFrame):
         if file_path:
             self.selected_image_path = file_path
             self.lbl_image_path.configure(text=os.path.basename(file_path))
+            self._update_preview(file_path)
+
+    def _update_preview(self, file_path):
+        try:
+            if file_path and os.path.exists(file_path):
+                 img = PIL.Image.open(file_path)
+                 ctk_img = ctk.CTkImage(light_image=img, dark_image=img, size=(100, 100))
+                 self.lbl_preview.configure(image=ctk_img, text="")
+            else:
+                 self.lbl_preview.configure(image=None, text="[No Image]")
+        except Exception as e:
+            print(f"Preview Error: {e}")
+            self.lbl_preview.configure(image=None, text="[Error]")
 
     def load_lecturers(self):
         self.progress.grid()
@@ -142,11 +161,16 @@ class LecturerFrame(ctk.CTkFrame):
             self.entries["email"].delete(0, 'end')
             self.entries["email"].insert(0, lecturer.get("lecturerEmail", ""))
             
+            self.entries["password"].delete(0, 'end')
+            self.entries["password"].insert(0, lecturer.get("password", ""))
+
             self.selected_image_path = lecturer.get("lecturerPhoto", None)
             if self.selected_image_path:
                  self.lbl_image_path.configure(text=os.path.basename(self.selected_image_path))
+                 self._update_preview(self.selected_image_path)
             else:
                  self.lbl_image_path.configure(text="No file selected")
+                 self._update_preview(None)
 
     def update_lecturer(self):
         lec_id = self.entries["lecturer_id"].get()
@@ -159,6 +183,7 @@ class LecturerFrame(ctk.CTkFrame):
         update_data = {
             "lecturerName": data["lecturer_name"],
             "lecturerEmail": data["email"],
+            "password": data["password"],
             "lecturerPhoto": self.selected_image_path
         }
 
@@ -200,6 +225,7 @@ class LecturerFrame(ctk.CTkFrame):
             "lecturerId": lec_id,
             "lecturerName": data["lecturer_name"],
             "lecturerEmail": data["email"],
+            "password": data["password"],
             "lecturerPhoto": self.selected_image_path # Storing path for simplicity
         }
 
@@ -221,3 +247,4 @@ class LecturerFrame(ctk.CTkFrame):
             
         self.selected_image_path = None
         self.lbl_image_path.configure(text="No file selected")
+        self._update_preview(None)

@@ -4,3 +4,5 @@ opencv-python
 face_recognition
 pillow
 numpy
+reportlab
+

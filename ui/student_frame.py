@@ -8,6 +8,7 @@ from logic.validators import validate_email, validate_non_empty
 import os
 import shutil
 import threading
+import PIL.Image
 
 class StudentFrame(ctk.CTkFrame):
     def __init__(self, parent, controller):
@@ -40,24 +41,37 @@ class StudentFrame(ctk.CTkFrame):
         self.create_entry("Department", 4, is_combo=True)
         self.create_entry("Contact", 5)
 
-        # Image Selection
-        self.btn_image = ctk.CTkButton(self.form_frame, text="Select Photo", command=self.select_image)
-        self.btn_image.grid(row=6, column=0, padx=10, pady=10)
-        self.lbl_image_path = ctk.CTkLabel(self.form_frame, text="No file selected")
-        self.lbl_image_path.grid(row=6, column=1, sticky="w", padx=10)
+        # Image Selection Section
+        ctk.CTkLabel(self.form_frame, text="Photo").grid(row=6, column=0, padx=10, pady=5, sticky="ne")
+        
+        self.photo_frame = ctk.CTkFrame(self.form_frame, fg_color="transparent")
+        self.photo_frame.grid(row=6, column=1, padx=10, pady=5, sticky="ew")
+        
+        self.btn_image = ctk.CTkButton(self.photo_frame, text="Select Photo", command=self.select_image, width=100)
+        self.btn_image.grid(row=0, column=0, padx=(0, 5), pady=5)
+        
+        self.btn_camera = ctk.CTkButton(self.photo_frame, text="Capture", command=self.open_camera, width=100, fg_color="#E91E63", hover_color="#C2185B")
+        self.btn_camera.grid(row=0, column=1, padx=5, pady=5)
+        
+        self.lbl_image_path = ctk.CTkLabel(self.photo_frame, text="No file selected", font=("Roboto", 12))
+        self.lbl_image_path.grid(row=1, column=0, columnspan=2, sticky="w", padx=5)
+
+        # Preview
+        self.lbl_preview = ctk.CTkLabel(self.form_frame, text="[No Image]", width=100, height=100)
+        self.lbl_preview.grid(row=7, column=0, columnspan=2, pady=5)
 
         # Buttons Row
         self.btn_save = ctk.CTkButton(self.form_frame, text="Save", command=self.save_student)
-        self.btn_save.grid(row=7, column=0, padx=5, pady=20)
+        self.btn_save.grid(row=8, column=0, padx=5, pady=20)
         
         self.btn_update = ctk.CTkButton(self.form_frame, text="Update", command=self.update_student, fg_color="orange", hover_color="darkorange")
-        self.btn_update.grid(row=7, column=1, padx=5, pady=20)
+        self.btn_update.grid(row=8, column=1, padx=5, pady=20)
 
         self.btn_delete = ctk.CTkButton(self.form_frame, text="Delete", command=self.delete_student, fg_color="red", hover_color="darkred")
-        self.btn_delete.grid(row=8, column=0, columnspan=2, pady=5)
+        self.btn_delete.grid(row=9, column=0, columnspan=2, pady=5)
         
         self.btn_clear = ctk.CTkButton(self.form_frame, text="Clear Form", command=self.clear_form, fg_color="gray", hover_color="darkgray")
-        self.btn_clear.grid(row=9, column=0, columnspan=2, pady=5)
+        self.btn_clear.grid(row=10, column=0, columnspan=2, pady=5)
 
         # --- RIGHT: LIST ---
         self.list_frame = ctk.CTkFrame(self)
@@ -107,8 +121,8 @@ class StudentFrame(ctk.CTkFrame):
             batch_vals = [b["name"] for b in batches] if batches else ["No Batches"]
             dept_vals = [d["name"] for d in depts] if depts else ["No Departments"]
             
-            self.after(0, lambda: self.entries["batch"].configure(values=batch_vals))
-            self.after(0, lambda: self.entries["department"].configure(values=dept_vals))
+            self.after(0, lambda v=batch_vals: self.entries["batch"].configure(values=v))
+            self.after(0, lambda v=dept_vals: self.entries["department"].configure(values=v))
             
             # Default selection if needed? CTkComboBox usually selects first.
         except Exception as e:
@@ -131,8 +145,29 @@ class StudentFrame(ctk.CTkFrame):
     def select_image(self):
         file_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg *.png *.jpeg")])
         if file_path:
+            self.set_image(file_path)
+
+    def open_camera(self):
+        from .camera_capture import CameraCaptureDialog
+        CameraCaptureDialog(self, self.set_image)
+
+    def set_image(self, file_path):
+        if file_path:
             self.selected_image_path = file_path
             self.lbl_image_path.configure(text=os.path.basename(file_path))
+            self._update_preview(file_path)
+
+    def _update_preview(self, file_path):
+        try:
+            if file_path and os.path.exists(file_path):
+                 img = PIL.Image.open(file_path)
+                 ctk_img = ctk.CTkImage(light_image=img, dark_image=img, size=(100, 100))
+                 self.lbl_preview.configure(image=ctk_img, text="")
+            else:
+                 self.lbl_preview.configure(image=None, text="[No Image]")
+        except Exception as e:
+            print(f"Preview Error: {e}")
+            self.lbl_preview.configure(image=None, text="[Error]")
 
     def load_students(self):
         # Show Progress
@@ -201,8 +236,10 @@ class StudentFrame(ctk.CTkFrame):
             self.selected_image_path = student.get("image_path", None)
             if self.selected_image_path:
                  self.lbl_image_path.configure(text=os.path.basename(self.selected_image_path))
+                 self._update_preview(self.selected_image_path)
             else:
                  self.lbl_image_path.configure(text="No file selected")
+                 self._update_preview(None)
                  
             # Disable ID edit to prevent primary key change issues (optional, but good practice)
             # self.entries["user_id"].configure(state="disabled") 
@@ -328,3 +365,4 @@ class StudentFrame(ctk.CTkFrame):
                 entry.set("")
         self.selected_image_path = None
         self.lbl_image_path.configure(text="No file selected")
+        self._update_preview(None)

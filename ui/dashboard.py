@@ -93,4 +93,6 @@ class DashboardFrame(ctk.CTkFrame):
         for frame in self.frames.values():
             if hasattr(frame, "cleanup"):
                 frame.cleanup()
+        from logic.session_manager import SessionManager
+        SessionManager.clear_session()
         self.controller.show_frame("LoginFrame")

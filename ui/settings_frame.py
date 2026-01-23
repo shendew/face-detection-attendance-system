@@ -75,12 +75,20 @@ class SettingsFrame(ctk.CTkFrame):
         ctk.CTkButton(btn_frame, text="Delete", command=delete_item, fg_color="red", hover_color="darkred", width=80).pack(side="left", padx=5)
 
         def load_items():
-            for item in tree.get_children():
-                tree.delete(item)
-            
-            items = self.db.find_all_documents(collection)
-            for i in items:
-                tree.insert("", "end", values=(i.get("name"),))
+            def fetch_data():
+                # Fetch data in background thread
+                items = self.db.find_all_documents(collection)
+                
+                # Schedule UI update on main thread
+                def update_ui():
+                    for item in tree.get_children():
+                        tree.delete(item)
+                    for i in items:
+                        tree.insert("", "end", values=(i.get("name"),))
+                
+                self.after(0, update_ui)
+
+            threading.Thread(target=fetch_data, daemon=True).start()
         
         # Initial Load
         load_items()
