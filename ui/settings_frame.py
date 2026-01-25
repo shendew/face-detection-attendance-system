@@ -93,20 +93,11 @@ class SettingsFrame(ctk.CTkFrame):
         # Initial Load
         load_items()
         
-        # Store refresh function to be called on show if needed
-        # Just simple load for now, assuming local updates
+        #  simple load local updates
 
     def cleanup(self):
         pass
 
     def on_show(self):
         # Refresh lists in case of external changes? 
-        # For now, we rebuild the frame or we can trigger refresh.
-        # Since setup_crud_section logic is closures, it's hard to trigger from outside. 
-        # Rebuilding via dashboard caching system is fine as long as we don't cache SettingsFrame or provide refresh mechanism.
-        # Check Dashboard: it caches. 
-        # So we should make load_items accessible or just rebuild UI? 
-        # Rebuilding UI is expensive.
-        # Let's verify if on_show re-runs setup? No.
-        # Let's make setup return the load function and store it.
         pass

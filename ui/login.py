@@ -76,11 +76,7 @@ class LoginFrame(ctk.CTkFrame):
         if role_selected == "Admin":
             username = self.entry_admin_user.get()
             password = self.entry_admin_pass.get()
-            # For admin, auth manager checks config, but let's pass to generic or specific?
-            # Creating a unified login in AuthManager handles checking both if implemented that way,
-            # but here we know the intent.
-            # Let's force check based on selection to avoid ambiguity.
-            
+
             # Re-using unified login for simplicity, assuming Admin user won't clash with Lecturer ID
             success, role, user_data = auth.login(username, password)
             

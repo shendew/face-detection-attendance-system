@@ -500,10 +500,7 @@ class AttendanceFrame(ctk.CTkFrame):
                 self.after(0, lambda: messagebox.showinfo("Info", "No attendance records found for this session."))
                 return
 
-            # Ask save location on main thread
-            # NOTE: filedialog must be on main thread usually. 
-            # So collecting path first would be better, but for simplicity let's assume quick fetch.
-            # To be safe, let's fetch first then save.
+
             pass # Move file dialog to main thread wrapper
         except Exception as e:
             print(f"Error exporting: {e}")

@@ -69,7 +69,7 @@ class LecturerDashboardFrame(ctk.CTkFrame):
 
     def on_show(self):
         # Load user info
-        # Try from controller first, then session
+        # Try from controller , then session
         user_data = getattr(self.controller, "current_user", None)
         if not user_data:
             session = SessionManager.load_session()

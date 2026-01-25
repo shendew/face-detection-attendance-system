@@ -334,7 +334,7 @@ class StudentFrame(ctk.CTkFrame):
             "UserDept": data["department"],
             "userContact": data["contact"],
             "face_encoding": FaceHandler.convert_encoding_to_list(encoding),
-            # Ideally store image path or bytes, here just path for simplicity
+            # Ideally store image path or bytes
             "image_path": self.selected_image_path 
         }
 
@@ -355,7 +355,7 @@ class StudentFrame(ctk.CTkFrame):
                 if current_state == "readonly" and entry == self.entries.get("user_id"):
                      entry.configure(state="readonly")
                 # For others, keep normal. The loop sets all normal then delete. 
-                # Actually, only ID is readonly.
+                # only ID is readonly.
                 
                 # Re-apply readonly to user_id specifically
                 if entry == self.entries.get("user_id"):

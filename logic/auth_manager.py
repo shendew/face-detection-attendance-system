@@ -29,7 +29,6 @@ class AuthManager:
         
         if lecturer:
             # Check password
-            # Note: In a real app, hash passwords! For now, plain text as per context style or simple requirement.
             stored_pass = lecturer.get("password")
             if stored_pass and stored_pass == password:
                 return True, "lecturer", lecturer
