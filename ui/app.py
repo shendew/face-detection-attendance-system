@@ -1,3 +1,16 @@
+import hashlib
+import sys
+
+# --- MANDATORY FIX FOR REPORTLAB 'usedforsecurity' ERROR ---
+try:
+    hashlib.md5(b'test', usedforsecurity=False)
+except TypeError:
+    real_md5 = hashlib.md5
+    def md5_patched(data=b'', **kwargs):
+        kwargs.pop('usedforsecurity', None) # Remove the broken argument
+        return real_md5(data, **kwargs)
+    hashlib.md5 = md5_patched
+# ---------------------------------------------------------
 
 import customtkinter as ctk
 from .login import LoginFrame
