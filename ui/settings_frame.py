@@ -61,7 +61,7 @@ class SettingsFrame(ctk.CTkFrame):
             selected = tree.selection()
             if not selected:
                 return
-            val = tree.item(selected)['values'][0]
+            val = str(tree.item(selected)['values'][0])
             if messagebox.askyesno("Confirm", f"Delete '{val}'?"):
                 if self.db.delete_document(collection, {"name": val}):
                     load_items()

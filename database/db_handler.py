@@ -34,7 +34,8 @@ class DatabaseHandler:
     
     def delete_document(self, collection_name, query):
         col = self.get_collection(collection_name)
-        return col.delete_one(query)
+        result = col.delete_one(query)
+        return result.deleted_count > 0
 
     def get_next_id(self, collection_name, id_field, prefix):
         col = self.get_collection(collection_name)
