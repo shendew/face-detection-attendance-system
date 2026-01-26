@@ -1,5 +1,6 @@
 
 import customtkinter as ctk
+from tkinter import messagebox
 from .student_frame import StudentFrame
 from .lecturer_frame import LecturerFrame
 from .session_frame import SessionFrame
@@ -89,10 +90,15 @@ class DashboardFrame(ctk.CTkFrame):
         self.switch_frame(SettingsFrame)
 
     def logout(self):
-        # Cleanup all frames before logout
-        for frame in self.frames.values():
-            if hasattr(frame, "cleanup"):
-                frame.cleanup()
+        if not messagebox.askyesno("Logout", "Are you sure you want to logout?"):
+            return
+        
+        self.cleanup()
         from logic.session_manager import SessionManager
         SessionManager.clear_session()
         self.controller.show_frame("LoginFrame")
+
+    def cleanup(self):
+        for frame in self.frames.values():
+            if hasattr(frame, "cleanup"):
+                frame.cleanup()

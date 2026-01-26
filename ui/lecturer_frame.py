@@ -248,3 +248,6 @@ class LecturerFrame(ctk.CTkFrame):
         self.selected_image_path = None
         self.lbl_image_path.configure(text="No file selected")
         self._update_preview(None)
+
+    def cleanup(self):
+        self.clear_form()

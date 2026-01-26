@@ -264,3 +264,6 @@ class SessionFrame(ctk.CTkFrame):
         # Reset date
         self.entry_date.delete(0, 'end')
         self.entry_date.insert(0, datetime.now().strftime("%Y-%m-%d"))
+
+    def cleanup(self):
+        self.clear_form()

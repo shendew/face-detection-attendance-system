@@ -105,7 +105,15 @@ class AttendanceFrame(ctk.CTkFrame):
         
         self.marked_users = set()
 
+        # Create blank image for camera off state
+        self.blank_image = ctk.CTkImage(
+            light_image=PIL.Image.new("RGB", (640, 480), "black"),
+            dark_image=PIL.Image.new("RGB", (640, 480), "black"),
+            size=(640, 480)
+        )
+
         # Initial Load handled by on_show
+
 
     def cleanup(self):
         """Releases resources when frame is destroyed"""
@@ -224,10 +232,22 @@ class AttendanceFrame(ctk.CTkFrame):
         self.is_running = False
         if self.cap:
             self.cap.release()
-        self.lbl_video.configure(image=None, text="Camera Feed Off")
+            self.cap = None # Explicitly set to None
+        
+        # Force clear the image
+        self.lbl_video.configure(image=self.blank_image, text="") # Show blank image, no text needed if black
+        self.lbl_video.image = self.blank_image # Keep ref
+        
         self.btn_start.configure(state="normal")
         self.btn_stop.configure(state="disabled")
         self.lbl_status.configure(text="Ready")
+        
+        # Clear live list on stop? Maybe optional, but user said "saved even after logout".
+        # If we logout, cleanup() calls this. 
+        # But if we just stop, maybe we want to keep the list? 
+        # User said "frezed camera frame is saved".
+        # So primarily fix the camera frame.
+        pass
 
     def update_video(self):
         if not self.is_running or not self.winfo_exists():

@@ -28,6 +28,8 @@ class App(ctk.CTk):
         self.grid_rowconfigure(0, weight=1)
         self.grid_columnconfigure(0, weight=1)
 
+        self.active_frame_name = None # Track active frame by name or instance
+
         self.frames = {}
         self.current_user = None # Store logged in user info
         
@@ -57,6 +59,13 @@ class App(ctk.CTk):
              self.show_frame("LoginFrame")
 
     def show_frame(self, frame_name):
+        # Cleanup previous frame
+        if self.active_frame_name and self.active_frame_name in self.frames:
+            old_frame = self.frames[self.active_frame_name]
+            if hasattr(old_frame, "cleanup"):
+                old_frame.cleanup()
+
+        self.active_frame_name = frame_name
         frame = self.frames[frame_name]
         frame.tkraise()
         if hasattr(frame, "on_show"):
