@@ -15,6 +15,9 @@ class SettingsFrame(ctk.CTkFrame):
         self.grid_columnconfigure(1, weight=1)
         self.grid_rowconfigure(0, weight=1)
 
+        # Store sections for refreshing
+        self.sections = [] # List of tuples: (tree, collection)
+        
         # Batch Section (Left)
         self.batch_frame = ctk.CTkFrame(self)
         self.batch_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
@@ -41,6 +44,13 @@ class SettingsFrame(ctk.CTkFrame):
         tree.column("Name", width=200)
         tree.grid(row=3, column=0, sticky="nsew", padx=10, pady=5)
         
+        self.sections.append((tree, collection)) # Store for refresh
+        
+        # Styles
+        style = ttk.Style()
+        style.configure("Treeview", font=("Roboto", 12), rowheight=30)
+        style.configure("Treeview.Heading", font=("Roboto", 12, "bold"))
+
         # Add Button
         def add_item():
             val = entry.get().strip()
@@ -53,7 +63,7 @@ class SettingsFrame(ctk.CTkFrame):
             
             if self.db.insert_document(collection, {"name": val}):
                 entry.delete(0, 'end')
-                load_items()
+                self.load_data(tree, collection)
             else:
                 messagebox.showerror("Error", "Failed to add item.")
 
@@ -64,7 +74,7 @@ class SettingsFrame(ctk.CTkFrame):
             val = str(tree.item(selected)['values'][0])
             if messagebox.askyesno("Confirm", f"Delete '{val}'?"):
                 if self.db.delete_document(collection, {"name": val}):
-                    load_items()
+                    self.load_data(tree, collection)
                 else:
                     messagebox.showerror("Error", "Failed to delete item.")
 
@@ -74,30 +84,37 @@ class SettingsFrame(ctk.CTkFrame):
         ctk.CTkButton(btn_frame, text="Add", command=add_item, width=80).pack(side="left", padx=5)
         ctk.CTkButton(btn_frame, text="Delete", command=delete_item, fg_color="red", hover_color="darkred", width=80).pack(side="left", padx=5)
 
-        def load_items():
-            def fetch_data():
+        # Initial Load
+        self.load_data(tree, collection)
+
+    def load_data(self, tree, collection):
+        def fetch_data():
+            try:
                 # Fetch data in background thread
                 items = self.db.find_all_documents(collection)
                 
                 # Schedule UI update on main thread
-                def update_ui():
-                    for item in tree.get_children():
-                        tree.delete(item)
-                    for i in items:
-                        tree.insert("", "end", values=(i.get("name"),))
-                
-                self.after(0, update_ui)
+                self.after(0, lambda: self._update_tree(tree, items))
+            except Exception as e:
+                print(f"Error loading {collection}: {e}")
 
-            threading.Thread(target=fetch_data, daemon=True).start()
+        threading.Thread(target=fetch_data, daemon=True).start()
+
+    def _update_tree(self, tree, items):
+        if not self.winfo_exists():
+            return
         
-        # Initial Load
-        load_items()
-        
-        #  simple load local updates
+        for item in tree.get_children():
+            tree.delete(item)
+            
+        if items:
+            for i in items:
+                tree.insert("", "end", values=(i.get("name"),))
 
     def cleanup(self):
         pass
 
     def on_show(self):
-        # Refresh lists in case of external changes? 
-        pass
+        # Refresh all sections
+        for tree, collection in self.sections:
+            self.load_data(tree, collection)

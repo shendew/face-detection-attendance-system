@@ -37,6 +37,14 @@ class LecturerDashboardFrame(ctk.CTkFrame):
         
         # Treeview
         columns = ("ID", "Title", "Date", "Dept", "Action")
+        # Treeview Style
+        style = ttk.Style()
+        style.theme_use("clam")
+        style.configure("Treeview", background="#2b2b2b", fieldbackground="#2b2b2b", foreground="white", rowheight=40, font=("Roboto", 12))
+        style.map("Treeview", background=[("selected", "#1f6aa5")])
+        style.configure("Treeview.Heading", background="#333333", foreground="white", font=("Roboto", 13, "bold"))
+
+        columns = ("ID", "Title", "Date", "Dept", "Action")
         self.tree = ttk.Treeview(self.content, columns=columns, show="headings")
         self.tree.heading("ID", text="Session ID")
         self.tree.heading("Title", text="Title")
@@ -179,6 +187,9 @@ class LecturerDashboardFrame(ctk.CTkFrame):
         if not messagebox.askyesno("Logout", "Are you sure you want to logout?"):
             return
 
+        self.after(100, self._perform_logout)
+
+    def _perform_logout(self):
         SessionManager.clear_session()
         self.controller.current_user = None
         self.controller.show_frame("LoginFrame")

@@ -39,17 +39,25 @@ class LecturerFrame(ctk.CTkFrame):
         self.lbl_preview = ctk.CTkLabel(self.form_frame, text="[No Image]", width=100, height=100)
         self.lbl_preview.grid(row=5, column=0, columnspan=2, pady=5)
 
-        self.btn_save = ctk.CTkButton(self.form_frame, text="Save", command=self.save_lecturer)
-        self.btn_save.grid(row=6, column=0, padx=5, pady=20)
+        # Buttons Container
+        self.button_frame = ctk.CTkFrame(self.form_frame, fg_color="transparent")
+        self.button_frame.grid(row=6, column=0, columnspan=2, sticky="ew", pady=20)
+        self.button_frame.grid_columnconfigure(0, weight=1)
+        self.button_frame.grid_columnconfigure(1, weight=1)
 
-        self.btn_update = ctk.CTkButton(self.form_frame, text="Update", command=self.update_lecturer, fg_color="orange", hover_color="darkorange")
-        self.btn_update.grid(row=6, column=1, padx=5, pady=20)
+        self.btn_save = ctk.CTkButton(self.button_frame, text="Save", command=self.save_lecturer)
+        self.btn_save.grid(row=0, column=0, columnspan=2, padx=10, sticky="ew")
 
-        self.btn_delete = ctk.CTkButton(self.form_frame, text="Delete", command=self.delete_lecturer, fg_color="red", hover_color="darkred")
-        self.btn_delete.grid(row=7, column=0, columnspan=2, pady=5)
+        self.btn_update = ctk.CTkButton(self.button_frame, text="Update", command=self.update_lecturer, fg_color="orange", hover_color="darkorange")
+        self.btn_update.grid(row=0, column=0, padx=(10, 5), sticky="ew")
+        self.btn_update.grid_remove()
+
+        self.btn_delete = ctk.CTkButton(self.button_frame, text="Delete", command=self.delete_lecturer, fg_color="red", hover_color="darkred")
+        self.btn_delete.grid(row=0, column=1, padx=(5, 10), sticky="ew")
+        self.btn_delete.grid_remove()
         
-        self.btn_clear = ctk.CTkButton(self.form_frame, text="Clear Form", command=self.clear_form, fg_color="gray", hover_color="darkgray")
-        self.btn_clear.grid(row=8, column=0, columnspan=2, pady=5)
+        self.btn_clear = ctk.CTkButton(self.button_frame, text="Clear Form", command=self.clear_form, fg_color="gray", hover_color="darkgray")
+        self.btn_clear.grid(row=1, column=0, columnspan=2, padx=10, pady=(10, 0), sticky="ew")
 
         # --- RIGHT: LIST ---
         self.list_frame = ctk.CTkFrame(self)
@@ -57,7 +65,13 @@ class LecturerFrame(ctk.CTkFrame):
         self.list_frame.grid_columnconfigure(0, weight=1)
         self.list_frame.grid_rowconfigure(0, weight=1)
 
-        # Treeview
+        # Treeview Styles
+        style = ttk.Style()
+        style.theme_use("clam")
+        style.configure("Treeview", background="#2b2b2b", fieldbackground="#2b2b2b", foreground="white", rowheight=40, font=("Roboto", 12))
+        style.map("Treeview", background=[("selected", "#1f6aa5")])
+        style.configure("Treeview.Heading", background="#333333", foreground="white", font=("Roboto", 13, "bold"))
+
         self.tree = ttk.Treeview(self.list_frame, columns=("ID", "Name", "Email"), show="headings")
         self.tree.heading("ID", text="ID")
         self.tree.heading("Name", text="Name")
@@ -77,10 +91,7 @@ class LecturerFrame(ctk.CTkFrame):
         self.progress = ctk.CTkProgressBar(self.list_frame, height=10, corner_radius=0)
         self.progress.grid(row=1, column=0, columnspan=2, sticky="ew")
         self.progress.grid_remove()
-
-    def on_show(self):
-        self.load_lecturers()
-
+    
     def on_show(self):
         self.load_lecturers()
 
@@ -172,6 +183,11 @@ class LecturerFrame(ctk.CTkFrame):
                  self.lbl_image_path.configure(text="No file selected")
                  self._update_preview(None)
 
+            # Toggle Buttons
+            self.btn_save.grid_remove()
+            self.btn_update.grid(row=0, column=0, padx=(10, 5), sticky="ew")
+            self.btn_delete.grid(row=0, column=1, padx=(5, 10), sticky="ew")
+
     def update_lecturer(self):
         lec_id = self.entries["lecturer_id"].get()
         if not lec_id:
@@ -179,6 +195,11 @@ class LecturerFrame(ctk.CTkFrame):
             return
 
         data = {key: entry.get() for key, entry in self.entries.items()}
+        
+        # Validation
+        if not data["lecturer_name"] or not data["email"] or not data["password"]:
+             messagebox.showwarning("Validation Error", "Name, Email and Password are required!")
+             return
         
         update_data = {
             "lecturerName": data["lecturer_name"],
@@ -248,6 +269,11 @@ class LecturerFrame(ctk.CTkFrame):
         self.selected_image_path = None
         self.lbl_image_path.configure(text="No file selected")
         self._update_preview(None)
+        
+        # Show Save button again, hide others
+        self.btn_save.grid()
+        self.btn_update.grid_remove()
+        self.btn_delete.grid_remove()
 
     def cleanup(self):
         self.clear_form()

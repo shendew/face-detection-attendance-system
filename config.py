@@ -12,6 +12,6 @@ COL_ATTENDANCE = "attendance"
 COL_BATCHES = "batches"
 COL_DEPARTMENTS = "departments"
 
-# Admin Credentials (Hardcoded as requested)
+# Admin Credentials (
 ADMIN_USER = "admin"
 ADMIN_PASS = "adminpwd"

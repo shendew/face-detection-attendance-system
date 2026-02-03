@@ -63,8 +63,13 @@ class DashboardFrame(ctk.CTkFrame):
         
         # Get or Create frame instance
         if frame_class not in self.frames:
-            self.frames[frame_class] = frame_class(self.content_area, self.controller)
-            self.frames[frame_class].grid(row=0, column=0, sticky="nsew")
+            try:
+                self.frames[frame_class] = frame_class(self.content_area, self.controller)
+                self.frames[frame_class].grid(row=0, column=0, sticky="nsew")
+            except Exception as e:
+                messagebox.showerror("Error", f"Failed to load frame: {e}")
+                print(f"Frame Error: {e}")
+                return
         
         # Switch
         self.current_frame = self.frames[frame_class]
@@ -93,6 +98,9 @@ class DashboardFrame(ctk.CTkFrame):
         if not messagebox.askyesno("Logout", "Are you sure you want to logout?"):
             return
         
+        self.after(100, self._perform_logout)
+
+    def _perform_logout(self):
         self.cleanup()
         from logic.session_manager import SessionManager
         SessionManager.clear_session()

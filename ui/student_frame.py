@@ -60,18 +60,25 @@ class StudentFrame(ctk.CTkFrame):
         self.lbl_preview = ctk.CTkLabel(self.form_frame, text="[No Image]", width=100, height=100)
         self.lbl_preview.grid(row=7, column=0, columnspan=2, pady=5)
 
-        # Buttons Row
-        self.btn_save = ctk.CTkButton(self.form_frame, text="Save", command=self.save_student)
-        self.btn_save.grid(row=8, column=0, padx=5, pady=20)
-        
-        self.btn_update = ctk.CTkButton(self.form_frame, text="Update", command=self.update_student, fg_color="orange", hover_color="darkorange")
-        self.btn_update.grid(row=8, column=1, padx=5, pady=20)
+        # Buttons Container
+        self.button_frame = ctk.CTkFrame(self.form_frame, fg_color="transparent")
+        self.button_frame.grid(row=8, column=0, columnspan=2, sticky="ew", pady=20)
+        self.button_frame.grid_columnconfigure(0, weight=1)
+        self.button_frame.grid_columnconfigure(1, weight=1)
 
-        self.btn_delete = ctk.CTkButton(self.form_frame, text="Delete", command=self.delete_student, fg_color="red", hover_color="darkred")
-        self.btn_delete.grid(row=9, column=0, columnspan=2, pady=5)
+        self.btn_save = ctk.CTkButton(self.button_frame, text="Save", command=self.save_student)
+        self.btn_save.grid(row=0, column=0, columnspan=2, padx=10, sticky="ew")
         
-        self.btn_clear = ctk.CTkButton(self.form_frame, text="Clear Form", command=self.clear_form, fg_color="gray", hover_color="darkgray")
-        self.btn_clear.grid(row=10, column=0, columnspan=2, pady=5)
+        self.btn_update = ctk.CTkButton(self.button_frame, text="Update", command=self.update_student, fg_color="orange", hover_color="darkorange")
+        self.btn_update.grid(row=0, column=0, padx=(10, 5), sticky="ew")
+        self.btn_update.grid_remove() # Hide initially
+
+        self.btn_delete = ctk.CTkButton(self.button_frame, text="Delete", command=self.delete_student, fg_color="red", hover_color="darkred")
+        self.btn_delete.grid(row=0, column=1, padx=(5, 10), sticky="ew")
+        self.btn_delete.grid_remove() # Hide initially
+        
+        self.btn_clear = ctk.CTkButton(self.button_frame, text="Clear Form", command=self.clear_form, fg_color="gray", hover_color="darkgray")
+        self.btn_clear.grid(row=1, column=0, columnspan=2, padx=10, pady=(10, 0), sticky="ew")
 
         # --- RIGHT: LIST ---
         self.list_frame = ctk.CTkFrame(self)
@@ -82,9 +89,9 @@ class StudentFrame(ctk.CTkFrame):
         # Treeview Style
         style = ttk.Style()
         style.theme_use("clam")
-        style.configure("Treeview", background="#2b2b2b", fieldbackground="#2b2b2b", foreground="white", rowheight=30)
+        style.configure("Treeview", background="#2b2b2b", fieldbackground="#2b2b2b", foreground="white", rowheight=40, font=("Roboto", 12))
         style.map("Treeview", background=[("selected", "#1f6aa5")])
-        style.configure("Treeview.Heading", background="#333333", foreground="white", font=("Roboto", 10, "bold"))
+        style.configure("Treeview.Heading", background="#333333", foreground="white", font=("Roboto", 13, "bold"))
 
         self.tree = ttk.Treeview(self.list_frame, columns=("ID", "Name", "Dept"), show="headings")
         self.tree.heading("ID", text="ID")
@@ -128,6 +135,7 @@ class StudentFrame(ctk.CTkFrame):
         except Exception as e:
             print(f"Error loading dropdowns: {e}")
 
+
     def create_entry(self, label_text, row, is_combo=False, state="normal"):
         label = ctk.CTkLabel(self.form_frame, text=label_text)
         label.grid(row=row, column=0, padx=10, pady=5, sticky="e")
@@ -137,10 +145,21 @@ class StudentFrame(ctk.CTkFrame):
         else:
             widget = ctk.CTkEntry(self.form_frame, state=state)
             
+            # Contact Validation Logic
+            if label_text == "Contact":
+                 vcmd = (self.register(self.validate_contact), '%P')
+                 widget.configure(validate="key", validatecommand=vcmd)
+            
         widget.grid(row=row, column=1, padx=10, pady=5, sticky="ew")
         # Store reference using label text as key (simplified)
         key = label_text.lower().replace(" ", "_")
         self.entries[key] = widget
+
+    def validate_contact(self, new_value):
+        if not new_value:
+            return True
+        # Allow numbers only and max length 10
+        return new_value.isdigit() and len(new_value) <= 10
 
     def select_image(self):
         file_path = filedialog.askopenfilename(filetypes=[("Image Files", "*.jpg *.png *.jpeg")])
@@ -149,7 +168,13 @@ class StudentFrame(ctk.CTkFrame):
 
     def open_camera(self):
         from .camera_capture import CameraCaptureDialog
-        CameraCaptureDialog(self, self.set_image)
+        
+        def on_capture(file_path):
+             self.set_image(file_path)
+             if file_path:
+                  self.after(200, lambda: messagebox.showinfo("Success", "Image captured successfully!"))
+
+        CameraCaptureDialog(self, on_capture)
 
     def set_image(self, file_path):
         if file_path:
@@ -158,13 +183,16 @@ class StudentFrame(ctk.CTkFrame):
             self._update_preview(file_path)
 
     def _update_preview(self, file_path):
+        if not self.winfo_exists():
+            return
         try:
             if file_path and os.path.exists(file_path):
                  img = PIL.Image.open(file_path)
-                 ctk_img = ctk.CTkImage(light_image=img, dark_image=img, size=(100, 100))
-                 self.lbl_preview.configure(image=ctk_img, text="")
+                 self.current_image_ref = ctk.CTkImage(light_image=img, dark_image=img, size=(100, 100))
+                 self.lbl_preview.configure(image=self.current_image_ref, text="")
             else:
                  self.lbl_preview.configure(image=None, text="[No Image]")
+                 self.current_image_ref = None
         except Exception as e:
             print(f"Preview Error: {e}")
             self.lbl_preview.configure(image=None, text="[Error]")
@@ -240,9 +268,11 @@ class StudentFrame(ctk.CTkFrame):
             else:
                  self.lbl_image_path.configure(text="No file selected")
                  self._update_preview(None)
-                 
-            # Disable ID edit to prevent primary key change issues (optional, but good practice)
-            # self.entries["user_id"].configure(state="disabled") 
+                  
+            # Toggle buttons
+            self.btn_save.grid_remove() 
+            self.btn_update.grid(row=0, column=0, padx=(10, 5), sticky="ew")
+            self.btn_delete.grid(row=0, column=1, padx=(5, 10), sticky="ew")
 
     def update_student(self):
         user_id = self.entries["user_id"].get()
@@ -253,6 +283,14 @@ class StudentFrame(ctk.CTkFrame):
         data = {key: entry.get() for key, entry in self.entries.items()}
         
         # Validation
+        if not data["full_name"] or not data["batch"] or not data["department"] or not data["contact"]:
+             messagebox.showwarning("Validation Error", "Name, Batch, Department and Contact are required!")
+             return
+
+        if len(data["contact"]) != 10:
+             messagebox.showwarning("Validation Error", "Contact number must be exactly 10 digits!")
+             return
+
         if not validate_email(data["email"]):
              messagebox.showwarning("Validation Error", "Invalid Email Address!")
              return
@@ -306,6 +344,10 @@ class StudentFrame(ctk.CTkFrame):
             messagebox.showwarning("Validation Error", "All fields and photo are required!")
             return
 
+        if len(data["contact"]) != 10:
+             messagebox.showwarning("Validation Error", "Contact number must be exactly 10 digits!")
+             return
+
         if not validate_email(data["email"]):
              messagebox.showwarning("Validation Error", "Invalid Email Address!")
              return
@@ -354,10 +396,7 @@ class StudentFrame(ctk.CTkFrame):
                 entry.delete(0, 'end')
                 if current_state == "readonly" and entry == self.entries.get("user_id"):
                      entry.configure(state="readonly")
-                # For others, keep normal. The loop sets all normal then delete. 
-                # only ID is readonly.
-                
-                # Re-apply readonly to user_id specifically
+
                 if entry == self.entries.get("user_id"):
                     entry.configure(state="readonly")
                 
@@ -366,6 +405,11 @@ class StudentFrame(ctk.CTkFrame):
         self.selected_image_path = None
         self.lbl_image_path.configure(text="No file selected")
         self._update_preview(None)
+        
+        # Show Save button again, hide others
+        self.btn_save.grid()
+        self.btn_update.grid_remove()
+        self.btn_delete.grid_remove()
 
     def cleanup(self):
         self.clear_form()

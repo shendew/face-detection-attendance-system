@@ -42,23 +42,38 @@ class SessionFrame(ctk.CTkFrame):
         # Load Lecturers Async (Handled in on_show)
         # threading.Thread(target=self._load_lecturers_thread, daemon=True).start()
 
-        self.btn_save = ctk.CTkButton(self.form_frame, text="Save", command=self.save_session)
-        self.btn_save.grid(row=5, column=0, padx=5, pady=20)
+        # Buttons Container
+        self.button_frame = ctk.CTkFrame(self.form_frame, fg_color="transparent")
+        self.button_frame.grid(row=5, column=0, columnspan=2, sticky="ew", pady=20)
+        self.button_frame.grid_columnconfigure(0, weight=1)
+        self.button_frame.grid_columnconfigure(1, weight=1)
 
-        self.btn_update = ctk.CTkButton(self.form_frame, text="Update", command=self.update_session, fg_color="orange", hover_color="darkorange")
-        self.btn_update.grid(row=5, column=1, padx=5, pady=20)
+        self.btn_save = ctk.CTkButton(self.button_frame, text="Save", command=self.save_session)
+        self.btn_save.grid(row=0, column=0, columnspan=2, padx=10, sticky="ew")
 
-        self.btn_delete = ctk.CTkButton(self.form_frame, text="Delete", command=self.delete_session, fg_color="red", hover_color="darkred")
-        self.btn_delete.grid(row=6, column=0, columnspan=2, pady=5)
+        self.btn_update = ctk.CTkButton(self.button_frame, text="Update", command=self.update_session, fg_color="orange", hover_color="darkorange")
+        self.btn_update.grid(row=0, column=0, padx=(10, 5), sticky="ew")
+        self.btn_update.grid_remove() # Hide initially
+
+        self.btn_delete = ctk.CTkButton(self.button_frame, text="Delete", command=self.delete_session, fg_color="red", hover_color="darkred")
+        self.btn_delete.grid(row=0, column=1, padx=(5, 10), sticky="ew")
+        self.btn_delete.grid_remove() # Hide initially
         
-        self.btn_clear = ctk.CTkButton(self.form_frame, text="Clear Form", command=self.clear_form, fg_color="gray", hover_color="darkgray")
-        self.btn_clear.grid(row=7, column=0, columnspan=2, pady=5)
+        self.btn_clear = ctk.CTkButton(self.button_frame, text="Clear Form", command=self.clear_form, fg_color="gray", hover_color="darkgray")
+        self.btn_clear.grid(row=1, column=0, columnspan=2, padx=10, pady=(10, 0), sticky="ew")
 
         # --- RIGHT: LIST ---
         self.list_frame = ctk.CTkFrame(self)
         self.list_frame.grid(row=1, column=1, sticky="nsew", padx=20, pady=10)
         self.list_frame.grid_columnconfigure(0, weight=1)
         self.list_frame.grid_rowconfigure(0, weight=1)
+
+        # Treeview Styles
+        style = ttk.Style()
+        style.theme_use("clam")
+        style.configure("Treeview", background="#2b2b2b", fieldbackground="#2b2b2b", foreground="white", rowheight=40, font=("Roboto", 12))
+        style.map("Treeview", background=[("selected", "#1f6aa5")])
+        style.configure("Treeview.Heading", background="#333333", foreground="white", font=("Roboto", 13, "bold"))
 
         # Treeview
         self.tree = ttk.Treeview(self.list_frame, columns=("ID", "Title", "Dept", "Date"), show="headings")
@@ -188,6 +203,11 @@ class SessionFrame(ctk.CTkFrame):
                 if val.startswith(lec_id):
                     self.combo_lecturer.set(val)
                     break
+            
+            # Toggle buttons
+            self.btn_save.grid_remove()
+            self.btn_update.grid(row=0, column=0, padx=(10, 5), sticky="ew")
+            self.btn_delete.grid(row=0, column=1, padx=(5, 10), sticky="ew")
 
     def update_session(self):
         sess_id = self.entries["session_id"].get()
@@ -199,6 +219,11 @@ class SessionFrame(ctk.CTkFrame):
         lec_selection = self.combo_lecturer.get()
         date_str = self.entry_date.get()
         
+        # Validation
+        if not data["title"] or not data["department"] or not date_str or not lec_selection or lec_selection == "No Lecturers Found":
+             messagebox.showwarning("Validation Error", "All fields are required!")
+             return
+
         lecturer_id = lec_selection.split(" - ")[0] if lec_selection and lec_selection != "No Lecturers Found" else ""
 
         update_data = {
@@ -264,6 +289,11 @@ class SessionFrame(ctk.CTkFrame):
         # Reset date
         self.entry_date.delete(0, 'end')
         self.entry_date.insert(0, datetime.now().strftime("%Y-%m-%d"))
+        
+        # Show Save button again, hide others
+        self.btn_save.grid()
+        self.btn_update.grid_remove()
+        self.btn_delete.grid_remove()
 
     def cleanup(self):
         self.clear_form()
