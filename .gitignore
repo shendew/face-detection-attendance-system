@@ -15,7 +15,7 @@ data/student_images/
 data/lecturer_photos/
 *.jpg
 *.jpeg
-*.png
+# *.png
 # (Optional: Comment out *.jpg if you have UI icons you want to track)
 
 ### Database & Secrets ###
