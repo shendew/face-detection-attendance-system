@@ -11,6 +11,7 @@ import numpy as np
 from datetime import datetime
 import csv
 import threading
+from logic.pdf_generator import PDFGenerator
 
 class AttendanceFrame(ctk.CTkFrame):
     def __init__(self, parent, controller):
@@ -50,8 +51,8 @@ class AttendanceFrame(ctk.CTkFrame):
         self.btn_view = ctk.CTkButton(self.top_bar, text="View Records", command=self.show_records, fg_color="blue", hover_color="darkblue")
         self.btn_view.pack(side="right", padx=10)
 
-        self.btn_export = ctk.CTkButton(self.top_bar, text="Export CSV", command=self.export_csv)
-        self.btn_export.pack(side="right", padx=10)
+        self.btn_download_pdf = ctk.CTkButton(self.top_bar, text="Download PDF", command=self.download_pdf, fg_color="#E67E22", hover_color="#D35400")
+        self.btn_download_pdf.pack(side="right", padx=10)
 
         # Status Label
         self.lbl_status = ctk.CTkLabel(self, text="Ready", font=("Roboto", 14))
@@ -79,6 +80,16 @@ class AttendanceFrame(ctk.CTkFrame):
         ctk.CTkLabel(self.sidebar, text="Marked Students", font=("Roboto", 16, "bold")).grid(row=0, column=0, pady=10)
 
         # Live List
+        # Live List Style
+        style = ttk.Style()
+        style.theme_use("clam")
+        style.configure("Treeview", background="#2b2b2b", fieldbackground="#2b2b2b", foreground="white", rowheight=30, font=("Roboto", 12))
+        style.map("Treeview", 
+            background=[("selected", "#1f6aa5")],
+            foreground=[("selected", "white"), ("!selected", "white")]
+        )
+        style.configure("Treeview.Heading", background="#333333", foreground="white", font=("Roboto", 13, "bold"))
+
         self.live_list = ttk.Treeview(self.sidebar, columns=("ID", "Name", "Time"), show="headings")
         self.live_list.heading("ID", text="Student ID")
         self.live_list.heading("Name", text="Name")
@@ -501,59 +512,63 @@ class AttendanceFrame(ctk.CTkFrame):
                 
         threading.Thread(target=fetch, daemon=True).start()
 
-    def export_csv(self):
-        selection = self.combo_session.get()
-        if not selection or selection == "No Sessions" or selection == "Loading...":
-            messagebox.showwarning("Warning", "Please select a session to export.")
-            return
-
-        session_id = selection.split(" - ")[0]
-        
-        # Run export in background
-        threading.Thread(target=self._export_csv_thread, args=(session_id,), daemon=True).start()
-        
-    def _export_csv_thread(self, session_id):
-        try:
-            records = self.db.find_all_documents(COL_ATTENDANCE, {"lecId": session_id})
-            
-            if not records:
-                self.after(0, lambda: messagebox.showinfo("Info", "No attendance records found for this session."))
-                return
-
-
-            pass # Move file dialog to main thread wrapper
-        except Exception as e:
-            print(f"Error exporting: {e}")
-            
-    # Redefine export_csv to handle thread safety properly
-    def export_csv(self):
+    def download_pdf(self):
         selection = self.combo_session.get()
         if not selection or selection == "No Sessions": 
-            messagebox.showwarning("Warning", "Please select a session to export.")
+            messagebox.showwarning("Warning", "Please select a session to download.")
             return
 
         session_id = selection.split(" - ")[0]
-        file_path = filedialog.asksaveasfilename(defaultextension=".csv", filetypes=[("CSV files", "*.csv")])
+        session_title = selection.split(" - ")[1] if " - " in selection else "Session"
+        
+        # Default filename
+        default_file = f"Attendance_{session_id}_{session_title.replace(' ', '_')}.pdf"
+        
+        file_path = filedialog.asksaveasfilename(
+            defaultextension=".pdf", 
+            filetypes=[("PDF files", "*.pdf")],
+            initialfile=default_file
+        )
         if not file_path:
             return
 
-        threading.Thread(target=self._perform_export, args=(session_id, file_path), daemon=True).start()
+        self.btn_download_pdf.configure(state="disabled")
+        self.show_loading(True)
+        threading.Thread(target=self._generate_pdf_thread, args=(session_id, file_path), daemon=True).start()
 
-    def _perform_export(self, session_id, file_path):
+    def _generate_pdf_thread(self, session_id, file_path):
         try:
-            records = self.db.find_all_documents(COL_ATTENDANCE, {"lecId": session_id})
-            if not records:
-                 self.after(0, lambda: messagebox.showinfo("Info", "No records found."))
+            # 1. Get Session Data (Ensure we have it fresh)
+            session = self.db.find_document(COL_SESSIONS, {"lecId": str(session_id)})
+            if not session:
+                 self.after(0, lambda: messagebox.showerror("Error", "Session not found."))
                  return
 
-            with open(file_path, mode='w', newline='') as file:
-                writer = csv.writer(file)
-                writer.writerow(["Session ID", "User ID", "Date", "Timestamp"])
-                for r in records:
-                    writer.writerow([r["lecId"], r["userId"], r["lecDate"], r["timestamp"]])
+            # 2. Get Attendance Records
+            records = self.db.find_all_documents(COL_ATTENDANCE, {"lecId": str(session_id)})
             
-            self.after(0, lambda: messagebox.showinfo("Success", "Export successful!"))
+            # 3. Get Student Names
+            student_ids = list(set([r['userId'] for r in records]))
+            student_map = {}
+            if student_ids:
+                for uid in student_ids:
+                    s = self.db.find_document(COL_STUDENTS, {"userId": uid})
+                    if s:
+                        student_map[uid] = s.get("userName", "Unknown")
+            
+            # 4. Generate
+            success = PDFGenerator.generate_attendance_pdf(session, records, student_map, file_path)
+            
+            if success:
+                self.after(0, lambda: messagebox.showinfo("Success", "Attendance PDF downloaded successfully."))
+            else:
+                self.after(0, lambda: messagebox.showerror("Error", "Failed to generate PDF."))
+                
         except Exception as e:
+             print(f"PDF Gen Error: {e}")
              self.after(0, lambda: messagebox.showerror("Error", f"Export failed: {e}"))
+        finally:
+             self.after(0, lambda: self.show_loading(False))
+             self.after(0, lambda: self.btn_download_pdf.configure(state="normal"))
 
 import face_recognition # Imported here to avoid lag on startup if possible, though usually top level is fine.

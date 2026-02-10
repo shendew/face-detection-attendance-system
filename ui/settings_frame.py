@@ -49,6 +49,10 @@ class SettingsFrame(ctk.CTkFrame):
         # Styles
         style = ttk.Style()
         style.configure("Treeview", font=("Roboto", 12), rowheight=30)
+        style.map("Treeview", 
+            background=[("selected", "#1f6aa5")],
+            foreground=[("selected", "white"), ("!selected", "white")]
+        )
         style.configure("Treeview.Heading", font=("Roboto", 12, "bold"))
 
         # Add Button

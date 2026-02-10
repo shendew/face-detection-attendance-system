@@ -4,12 +4,29 @@ from pymongo import MongoClient
 from config import MONGO_URI, DB_NAME
 
 class DatabaseHandler:
-    def __init__(self):
-        self.client = MongoClient(MONGO_URI)
-        self.db = self.client[DB_NAME]
-    
+    _instance = None
+    _client = None
+    _db = None
+
+    def __new__(cls):
+        if cls._instance is None:
+            cls._instance = super(DatabaseHandler, cls).__new__(cls)
+            cls._instance._initialize()
+        return cls._instance
+
+    def _initialize(self):
+        if self._client is None:
+            try:
+                self._client = MongoClient(MONGO_URI)
+                self._db = self._client[DB_NAME]
+                # Send a ping to confirm a successful connection
+                self._client.admin.command('ping')
+                print("Connected to MongoDB successfully!")
+            except Exception as e:
+                print(f"Could not connect to MongoDB: {e}")
+
     def get_collection(self, collection_name):
-        return self.db[collection_name]
+        return self._db[collection_name]
     
     def insert_document(self, collection_name, data):
         try:

@@ -41,7 +41,10 @@ class LecturerDashboardFrame(ctk.CTkFrame):
         style = ttk.Style()
         style.theme_use("clam")
         style.configure("Treeview", background="#2b2b2b", fieldbackground="#2b2b2b", foreground="white", rowheight=40, font=("Roboto", 12))
-        style.map("Treeview", background=[("selected", "#1f6aa5")])
+        style.map("Treeview", 
+            background=[("selected", "#1f6aa5")],
+            foreground=[("selected", "white"), ("!selected", "white")]
+        )
         style.configure("Treeview.Heading", background="#333333", foreground="white", font=("Roboto", 13, "bold"))
 
         columns = ("ID", "Title", "Date", "Dept", "Action")
