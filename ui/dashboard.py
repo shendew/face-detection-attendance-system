@@ -95,15 +95,18 @@ class DashboardFrame(ctk.CTkFrame):
         self.switch_frame(SettingsFrame)
 
     def logout(self):
+        print("DEBUG: Admin Logout button clicked")
         if not messagebox.askyesno("Logout", "Are you sure you want to logout?"):
             return
         
         self.after(100, self._perform_logout)
 
     def _perform_logout(self):
+        print("DEBUG: Performing Admin logout")
         self.cleanup()
         from logic.session_manager import SessionManager
         SessionManager.clear_session()
+        print("DEBUG: Switching to LoginFrame")
         self.controller.show_frame("LoginFrame")
 
     def cleanup(self):

@@ -59,6 +59,7 @@ class App(ctk.CTk):
              self.show_frame("LoginFrame")
 
     def show_frame(self, frame_name):
+        print(f"DEBUG: App.show_frame({frame_name}) called")
         # Cleanup previous frame
         if self.active_frame_name and self.active_frame_name in self.frames:
             old_frame = self.frames[self.active_frame_name]
@@ -66,6 +67,10 @@ class App(ctk.CTk):
                 old_frame.cleanup()
 
         self.active_frame_name = frame_name
+        if frame_name not in self.frames:
+             print(f"ERROR: Frame {frame_name} not found in frames: {list(self.frames.keys())}")
+             return
+             
         frame = self.frames[frame_name]
         frame.tkraise()
         if hasattr(frame, "on_show"):

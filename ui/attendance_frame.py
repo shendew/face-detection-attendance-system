@@ -12,6 +12,7 @@ from datetime import datetime
 import csv
 import threading
 from logic.pdf_generator import PDFGenerator
+from logic.path_handler import PathHandler
 
 class AttendanceFrame(ctk.CTkFrame):
     def __init__(self, parent, controller):
@@ -68,8 +69,7 @@ class AttendanceFrame(ctk.CTkFrame):
         self.video_frame.grid_columnconfigure(0, weight=1)
         self.video_frame.grid_rowconfigure(0, weight=1)
         
-        self.lbl_video = ctk.CTkLabel(self.video_frame, text="Camera Feed Off")
-        self.lbl_video.grid(row=0, column=0)
+        self._create_video_label()
         
         # Sidebar (Right)
         self.sidebar = ctk.CTkFrame(self, width=300)
@@ -104,8 +104,7 @@ class AttendanceFrame(ctk.CTkFrame):
         self.details_frame = ctk.CTkFrame(self.sidebar)
         self.details_frame.grid(row=2, column=0, sticky="ew", padx=5, pady=10)
         
-        self.lbl_det_image = ctk.CTkLabel(self.details_frame, text="[No Photo]")
-        self.lbl_det_image.pack(pady=5)
+        self._create_detail_image_label()
         
         self.lbl_det_name = ctk.CTkLabel(self.details_frame, text="Name: -")
         self.lbl_det_name.pack(anchor="w", padx=10)
@@ -132,6 +131,14 @@ class AttendanceFrame(ctk.CTkFrame):
 
     def on_show(self):
         self.refresh_sessions_async()
+
+    def _create_video_label(self):
+        self.lbl_video = ctk.CTkLabel(self.video_frame, text="Camera Feed Off")
+        self.lbl_video.grid(row=0, column=0)
+
+    def _create_detail_image_label(self):
+        self.lbl_det_image = ctk.CTkLabel(self.details_frame, text="[No Photo]")
+        self.lbl_det_image.pack(pady=5)
 
     def refresh_sessions_async(self):
         self.show_loading(True)
@@ -320,7 +327,10 @@ class AttendanceFrame(ctk.CTkFrame):
                     self.lbl_video.configure(image=ctk_img, text="")
                     self.lbl_video.imgtk = ctk_img # Keep reference
             except Exception as e:
-                print(f"Frame update skipped: {e}")
+                print(f"Frame update error: {e}. Recreating label.")
+                if self.lbl_video.winfo_exists():
+                    self.lbl_video.destroy()
+                self._create_video_label()
         
         self.after(20, self.update_video)
 
@@ -434,6 +444,20 @@ class AttendanceFrame(ctk.CTkFrame):
         # Fetch detailed info (Image + Name/Dept if missing) from DB
         threading.Thread(target=self._fetch_student_details, args=(user_id,), daemon=True).start()
 
+    def _update_detail_image_ui(self, ctk_img, text=""):
+        try:
+             self.lbl_det_image.configure(image=ctk_img, text=text)
+             self.lbl_det_image.image = ctk_img
+        except Exception as e:
+             print(f"Detail image update error: {e}. Recreating.")
+             if self.lbl_det_image.winfo_exists():
+                 self.lbl_det_image.destroy()
+             self._create_detail_image_label()
+             try:
+                 self.lbl_det_image.configure(image=ctk_img, text=text)
+                 self.lbl_det_image.image = ctk_img
+             except: pass
+
     def _fetch_student_details(self, user_id):
         try:
             student = self.db.find_document(COL_STUDENTS, {"userId": user_id})
@@ -447,18 +471,17 @@ class AttendanceFrame(ctk.CTkFrame):
             
             # Update Image
             if student and "image_path" in student:
-                img_path = student["image_path"]
-                if os.path.exists(img_path):
+                img_path = PathHandler.resolve_path(student["image_path"])
+                if img_path and os.path.exists(img_path):
                     img = PIL.Image.open(img_path)
                     # Use CTkImage for HighDPI support
                     ctk_img = ctk.CTkImage(light_image=img, dark_image=img, size=(150, 150))
                     
-                    self.after(0, lambda: self.lbl_det_image.configure(image=ctk_img, text=""))
-                    self.after(0, lambda: setattr(self.lbl_det_image, 'image', ctk_img)) # Keep ref
+                    self.after(0, lambda: self._update_detail_image_ui(ctk_img, ""))
                 else:
-                    self.after(0, lambda: self.lbl_det_image.configure(image=None, text="[Image Not Found]"))
+                    self.after(0, lambda: self._update_detail_image_ui(None, "[Image Not Found]"))
             else:
-                self.after(0, lambda: self.lbl_det_image.configure(image=None, text="[No Image]"))
+                self.after(0, lambda: self._update_detail_image_ui(None, "[No Image]"))
         except Exception as e:
             print(f"Error loading details: {e}")
 

@@ -9,6 +9,7 @@ import os
 import shutil
 import threading
 import PIL.Image
+from logic.path_handler import PathHandler
 
 class StudentFrame(ctk.CTkFrame):
     def __init__(self, parent, controller):
@@ -17,6 +18,11 @@ class StudentFrame(ctk.CTkFrame):
         self.db = DatabaseHandler()
         self.selected_image_path = None
         self.entries = {}
+        
+        # Ensure images dir exists
+        try:
+             PathHandler.get_images_dir()
+        except: pass
 
         self.grid_columnconfigure(1, weight=1) # Give weight to list entry
         self.grid_rowconfigure(1, weight=1)
@@ -57,8 +63,8 @@ class StudentFrame(ctk.CTkFrame):
         self.lbl_image_path.grid(row=1, column=0, columnspan=2, sticky="w", padx=5)
 
         # Preview
-        self.lbl_preview = ctk.CTkLabel(self.form_frame, text="[No Image]", width=100, height=100)
-        self.lbl_preview.grid(row=7, column=0, columnspan=2, pady=5)
+        # Preview
+        self._create_preview_label()
 
         # Buttons Container
         self.button_frame = ctk.CTkFrame(self.form_frame, fg_color="transparent")
@@ -122,6 +128,11 @@ class StudentFrame(ctk.CTkFrame):
     def on_show(self):
         self.load_students()
         threading.Thread(target=self._load_dropdowns, daemon=True).start()
+
+    def _create_preview_label(self):
+        self.lbl_preview = ctk.CTkLabel(self.form_frame, text="[No Image]", width=100, height=100)
+        self.lbl_preview.grid(row=7, column=0, columnspan=2, pady=5)
+
 
     def _load_dropdowns(self):
         try:
@@ -188,17 +199,33 @@ class StudentFrame(ctk.CTkFrame):
     def _update_preview(self, file_path):
         if not self.winfo_exists():
             return
+        
+        # Resolve path
+        real_path = file_path
+        if file_path and not os.path.isabs(file_path):
+             real_path = PathHandler.resolve_path(file_path)
+
         try:
-            if file_path and os.path.exists(file_path):
-                 img = PIL.Image.open(file_path)
-                 self.current_image_ref = ctk.CTkImage(light_image=img, dark_image=img, size=(100, 100))
-                 self.lbl_preview.configure(image=self.current_image_ref, text="")
-            else:
-                 self.lbl_preview.configure(image=None, text="[No Image]")
-                 self.current_image_ref = None
+             if real_path and os.path.exists(real_path):
+                  img = PIL.Image.open(real_path)
+                  self.current_image_ref = ctk.CTkImage(light_image=img, dark_image=img, size=(100, 100))
+                  self.lbl_preview.configure(image=self.current_image_ref, text="")
+             else:
+                  self.lbl_preview.configure(image=None, text="[No Image]")
+                  self.current_image_ref = None
         except Exception as e:
-            print(f"Preview Error: {e}")
-            self.lbl_preview.configure(image=None, text="[Error]")
+             print(f"Preview Error during update: {e}. Recreating label.")
+             # Recreate label on error
+             if self.lbl_preview.winfo_exists():
+                 self.lbl_preview.destroy()
+             self._create_preview_label()
+             
+             # Retry setting image if we had a valid one
+             if self.current_image_ref:
+                 try:
+                     self.lbl_preview.configure(image=self.current_image_ref, text="")
+                 except:
+                     pass
 
     def load_students(self):
         # Show Progress
@@ -304,13 +331,29 @@ class StudentFrame(ctk.CTkFrame):
             "UserBatch": data["batch"],
             "UserDept": data["department"],
             "userContact": data["contact"],
-            "image_path": self.selected_image_path
+            "userContact": data["contact"],
+            # If image changed, path is already updated in self.selected_image_path
+            # BUT we need to save it to assets if it's a new selection (absolute path)
         }
+
+        # Handle Image Update
+        if self.selected_image_path:
+             # If it's an absolute path (new selection), copy it
+             if os.path.isabs(self.selected_image_path):
+                  new_rel_path = PathHandler.save_student_image(self.selected_image_path, user_id)
+                  if new_rel_path:
+                       update_data["image_path"] = new_rel_path
+                       self.selected_image_path = new_rel_path # Update current ref
+             else:
+                  # Already relative (no change), just ensure it's in update_data
+                  update_data["image_path"] = self.selected_image_path
         
         # Re-encode if image changed (or just always re-encode if path exists)
-        if self.selected_image_path:
+        # We need resolved path for encoding
+        resolved_path = PathHandler.resolve_path(self.selected_image_path)
+        if resolved_path:
              try:
-                 encoding = FaceHandler.encode_face(self.selected_image_path)
+                 encoding = FaceHandler.encode_face(resolved_path)
                  if encoding is not None:
                      update_data["face_encoding"] = FaceHandler.convert_encoding_to_list(encoding)
              except:
@@ -379,8 +422,9 @@ class StudentFrame(ctk.CTkFrame):
             "UserDept": data["department"],
             "userContact": data["contact"],
             "face_encoding": FaceHandler.convert_encoding_to_list(encoding),
-            # Ideally store image path or bytes
-            "image_path": self.selected_image_path 
+            "face_encoding": FaceHandler.convert_encoding_to_list(encoding),
+            # Save Image to Assets
+            "image_path": PathHandler.save_student_image(self.selected_image_path, user_id) 
         }
 
         # Insert to DB

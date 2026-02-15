@@ -36,8 +36,8 @@ class LecturerFrame(ctk.CTkFrame):
         self.lbl_image_path.grid(row=4, column=1, sticky="w", padx=10)
 
         # Preview
-        self.lbl_preview = ctk.CTkLabel(self.form_frame, text="[No Image]", width=100, height=100)
-        self.lbl_preview.grid(row=5, column=0, columnspan=2, pady=5)
+        # Preview
+        self._create_preview_label()
 
         # Buttons Container
         self.button_frame = ctk.CTkFrame(self.form_frame, fg_color="transparent")
@@ -98,6 +98,10 @@ class LecturerFrame(ctk.CTkFrame):
     def on_show(self):
         self.load_lecturers()
 
+    def _create_preview_label(self):
+        self.lbl_preview = ctk.CTkLabel(self.form_frame, text="[No Image]", width=100, height=100)
+        self.lbl_preview.grid(row=5, column=0, columnspan=2, pady=5)
+
     def create_entry(self, label_text, row, state="normal"):
         ctk.CTkLabel(self.form_frame, text=label_text).grid(row=row, column=0, padx=10, pady=5, sticky="e")
         entry = ctk.CTkEntry(self.form_frame, state=state)
@@ -113,16 +117,29 @@ class LecturerFrame(ctk.CTkFrame):
             self._update_preview(file_path)
 
     def _update_preview(self, file_path):
+        if not self.winfo_exists():
+            return
+            
         try:
             if file_path and os.path.exists(file_path):
                  img = PIL.Image.open(file_path)
-                 ctk_img = ctk.CTkImage(light_image=img, dark_image=img, size=(100, 100))
-                 self.lbl_preview.configure(image=ctk_img, text="")
+                 self.current_image_ref = ctk.CTkImage(light_image=img, dark_image=img, size=(100, 100))
+                 self.lbl_preview.configure(image=self.current_image_ref, text="")
             else:
                  self.lbl_preview.configure(image=None, text="[No Image]")
+                 self.current_image_ref = None
         except Exception as e:
-            print(f"Preview Error: {e}")
-            self.lbl_preview.configure(image=None, text="[Error]")
+            print(f"Preview Error: {e}. Recreating label.")
+            if self.lbl_preview.winfo_exists():
+                self.lbl_preview.destroy()
+            self._create_preview_label()
+            
+            # Retry
+            if self.current_image_ref:
+                try:
+                    self.lbl_preview.configure(image=self.current_image_ref, text="")
+                except:
+                    pass
 
     def load_lecturers(self):
         self.progress.grid()

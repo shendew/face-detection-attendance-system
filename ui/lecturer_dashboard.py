@@ -187,12 +187,22 @@ class LecturerDashboardFrame(ctk.CTkFrame):
             messagebox.showerror("Error", "Failed to generate PDF.")
 
     def logout(self):
-        if not messagebox.askyesno("Logout", "Are you sure you want to logout?"):
-            return
+        print("DEBUG: Logout button clicked")
+        try:
+            if not messagebox.askyesno("Logout", "Are you sure you want to logout?"):
+                print("DEBUG: Logout cancelled by user")
+                return
+        except Exception as e:
+            print(f"DEBUG: Messagebox error: {e}")
+            # Fallback if messagebox fails
+            pass
 
+        print("DEBUG: Proceeding to logout...")
         self.after(100, self._perform_logout)
 
     def _perform_logout(self):
+        print("DEBUG: Performing logout cleanup")
         SessionManager.clear_session()
         self.controller.current_user = None
+        print("DEBUG: Switching to LoginFrame")
         self.controller.show_frame("LoginFrame")
