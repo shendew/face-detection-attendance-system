@@ -264,25 +264,25 @@ class AttendanceFrame(ctk.CTkFrame):
             self.cap.release()
             self.cap = None # Explicitly set to None
         
-        # Force clear the image
-        self.lbl_video.configure(image=self.blank_image, text="") # Show blank image, no text needed if black
-        self.lbl_video.image = self.blank_image # Keep ref
-        
-        self.btn_start.configure(state="normal")
-        self.btn_stop.configure(state="disabled")
-        self.lbl_status.configure(text="Ready")
-        
-        # Clear live list on stop? Maybe optional, but user said "saved even after logout".
-        # If we logout, cleanup() calls this. 
-        # But if we just stop, maybe we want to keep the list? 
-        # User said "frezed camera frame is saved".
-        # So primarily fix the camera frame.
-        # Clear details panel
-        self.lbl_det_name.configure(text="Name: -")
-        self.lbl_det_id.configure(text="ID: -")
-        self.lbl_det_dept.configure(text="Dept: -")
-        self.lbl_det_image.configure(image=None, text="[No Photo]")
-        self.lbl_det_image.image = None
+        try:
+            # Force clear the image
+            if self.lbl_video.winfo_exists():
+                self.lbl_video.configure(image=self.blank_image, text="") 
+                self.lbl_video.image = self.blank_image
+            
+            self.btn_start.configure(state="normal")
+            self.btn_stop.configure(state="disabled")
+            self.lbl_status.configure(text="Ready")
+            
+            # Clear details panel
+            self.lbl_det_name.configure(text="Name: -")
+            self.lbl_det_id.configure(text="ID: -")
+            self.lbl_det_dept.configure(text="Dept: -")
+            if self.lbl_det_image.winfo_exists():
+                self.lbl_det_image.configure(image=None, text="[No Photo]")
+                self.lbl_det_image.image = None
+        except Exception as e:
+            print(f"Error in stop_attendance UI cleanup: {e}")
 
     def update_video(self):
         if not self.is_running or not self.winfo_exists():
