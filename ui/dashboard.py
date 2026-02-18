@@ -113,3 +113,7 @@ class DashboardFrame(ctk.CTkFrame):
         for frame in self.frames.values():
             if hasattr(frame, "cleanup"):
                 frame.cleanup()
+
+    def on_show(self):
+        if self.current_frame and hasattr(self.current_frame, "on_show"):
+            self.current_frame.on_show()

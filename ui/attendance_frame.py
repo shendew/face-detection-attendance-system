@@ -29,7 +29,8 @@ class AttendanceFrame(ctk.CTkFrame):
 
         self.grid_columnconfigure(0, weight=3) # Video
         self.grid_columnconfigure(1, weight=1) # Sidebar
-        self.grid_rowconfigure(2, weight=1)
+        self.grid_rowconfigure(2, weight=1) # Video Row
+        self.grid_rowconfigure(3, weight=0) # Details Row
 
         # Header with Session Selection
         self.top_bar = ctk.CTkFrame(self)
@@ -100,18 +101,25 @@ class AttendanceFrame(ctk.CTkFrame):
         self.live_list.grid(row=1, column=0, sticky="nsew", padx=5)
         self.live_list.bind("<<TreeviewSelect>>", self.on_live_select)
 
-        # Details Panel (Bottom of Sidebar)
-        self.details_frame = ctk.CTkFrame(self.sidebar)
-        self.details_frame.grid(row=2, column=0, sticky="ew", padx=5, pady=10)
+        # Details Panel (Bottom of Main Frame)
+        self.details_frame = ctk.CTkFrame(self, fg_color="#333333", height=120)
+        self.details_frame.grid(row=3, column=0, columnspan=2, sticky="ew", padx=10, pady=(0, 10))
+        self.details_frame.grid_columnconfigure(1, weight=1)
         
         self._create_detail_image_label()
         
-        self.lbl_det_name = ctk.CTkLabel(self.details_frame, text="Name: -")
-        self.lbl_det_name.pack(anchor="w", padx=10)
-        self.lbl_det_id = ctk.CTkLabel(self.details_frame, text="ID: -")
-        self.lbl_det_id.pack(anchor="w", padx=10)
-        self.lbl_det_dept = ctk.CTkLabel(self.details_frame, text="Dept: -")
-        self.lbl_det_dept.pack(anchor="w", padx=10)
+        # Text Info Container
+        self.info_frame = ctk.CTkFrame(self.details_frame, fg_color="transparent")
+        self.info_frame.grid(row=0, column=1, sticky="nsew", padx=20, pady=10)
+        
+        self.lbl_det_name = ctk.CTkLabel(self.info_frame, text="Name: -", font=("Roboto", 18, "bold"))
+        self.lbl_det_name.pack(anchor="w")
+        
+        self.lbl_det_id = ctk.CTkLabel(self.info_frame, text="ID: -", font=("Roboto", 14))
+        self.lbl_det_id.pack(anchor="w")
+        
+        self.lbl_det_dept = ctk.CTkLabel(self.info_frame, text="Dept: -", font=("Roboto", 14))
+        self.lbl_det_dept.pack(anchor="w")
         
         self.marked_users = set()
 
@@ -137,8 +145,8 @@ class AttendanceFrame(ctk.CTkFrame):
         self.lbl_video.grid(row=0, column=0)
 
     def _create_detail_image_label(self):
-        self.lbl_det_image = ctk.CTkLabel(self.details_frame, text="[No Photo]")
-        self.lbl_det_image.pack(pady=5)
+        self.lbl_det_image = ctk.CTkLabel(self.details_frame, text="[No Photo]", width=100, height=100)
+        self.lbl_det_image.grid(row=0, column=0, padx=10, pady=10)
 
     def refresh_sessions_async(self):
         self.show_loading(True)
@@ -265,7 +273,12 @@ class AttendanceFrame(ctk.CTkFrame):
         # But if we just stop, maybe we want to keep the list? 
         # User said "frezed camera frame is saved".
         # So primarily fix the camera frame.
-        pass
+        # Clear details panel
+        self.lbl_det_name.configure(text="Name: -")
+        self.lbl_det_id.configure(text="ID: -")
+        self.lbl_det_dept.configure(text="Dept: -")
+        self.lbl_det_image.configure(image=None, text="[No Photo]")
+        self.lbl_det_image.image = None
 
     def update_video(self):
         if not self.is_running or not self.winfo_exists():
@@ -402,6 +415,9 @@ class AttendanceFrame(ctk.CTkFrame):
                     
                     self.marked_users.add(user_id)
                     self.after(0, lambda: self._add_to_live_list_safe("Unknown", timestamp.strftime("%H:%M:%S"), user_id))
+                    
+                    # Live update details panel
+                    self.after(0, lambda: self._fetch_student_details(user_id))
                 else:
                      self.marked_users.add(user_id) # Cache it
             except Exception as e:

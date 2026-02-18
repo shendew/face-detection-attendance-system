@@ -126,6 +126,7 @@ class StudentFrame(ctk.CTkFrame):
 
 
     def on_show(self):
+        self.clear_form() # Populate ID and reset
         self.load_students()
         threading.Thread(target=self._load_dropdowns, daemon=True).start()
 
@@ -453,6 +454,16 @@ class StudentFrame(ctk.CTkFrame):
         self.lbl_image_path.configure(text="No file selected")
         self._update_preview(None)
         
+        # Auto-fill Next ID
+        try:
+            next_id = self.db.get_next_id(COL_STUDENTS, "userId", "STU")
+            self.entries["user_id"].configure(state="normal")
+            self.entries["user_id"].delete(0, 'end')
+            self.entries["user_id"].insert(0, next_id)
+            self.entries["user_id"].configure(state="readonly")
+        except Exception as e:
+            print(f"Error fetching next ID: {e}")
+
         # Show Save button again, hide others
         self.btn_save.grid()
         self.btn_update.grid_remove()

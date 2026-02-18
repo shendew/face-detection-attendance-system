@@ -49,8 +49,12 @@ class LoginFrame(ctk.CTkFrame):
 
         # -- Admin Widgets --
         self.admin_widgets = []
-        self.entry_admin_user = ctk.CTkEntry(self.form_frame, placeholder_text="Admin Username", width=280, height=40)
-        self.entry_admin_pass = ctk.CTkEntry(self.form_frame, placeholder_text="Password", show="*", width=280, height=40)
+        self.entry_admin_user = ctk.CTkEntry(self.form_frame, placeholder_text="Admin Username", 
+                                             placeholder_text_color="#808080", text_color=("black", "white"), 
+                                             fg_color=("white", "#343638"), width=280, height=40)
+        self.entry_admin_pass = ctk.CTkEntry(self.form_frame, placeholder_text="Password", 
+                                             placeholder_text_color="#808080", text_color=("black", "white"), 
+                                             fg_color=("white", "#343638"), show="*", width=280, height=40)
         
         # Admin Eye Button
         self.btn_eye_admin = ctk.CTkButton(self.form_frame, text="", image=self.eye_icon, width=30, height=30,
@@ -61,10 +65,18 @@ class LoginFrame(ctk.CTkFrame):
         self.entry_admin_pass.bind("<Return>", self.login_event)
         self.admin_widgets.extend([self.entry_admin_user, self.entry_admin_pass])
 
+        # Admin Labels
+        self.lbl_admin_user = ctk.CTkLabel(self.form_frame, text="Admin Username", font=("Roboto", 12))
+        self.lbl_admin_pass = ctk.CTkLabel(self.form_frame, text="Password", font=("Roboto", 12))
+
         # -- Lecturer Widgets --
         self.lecturer_widgets = []
-        self.entry_lec_id = ctk.CTkEntry(self.form_frame, placeholder_text="Lecturer ID (e.g. LEC001)", width=280, height=40)
-        self.entry_lec_pass = ctk.CTkEntry(self.form_frame, placeholder_text="Password", show="*", width=280, height=40)
+        self.entry_lec_id = ctk.CTkEntry(self.form_frame, placeholder_text="Lecturer ID (e.g. LEC001)", 
+                                         placeholder_text_color="#808080", text_color=("black", "white"), 
+                                         fg_color=("white", "#343638"), width=280, height=40)
+        self.entry_lec_pass = ctk.CTkEntry(self.form_frame, placeholder_text="Password", 
+                                           placeholder_text_color="#808080", text_color=("black", "white"), 
+                                           fg_color=("white", "#343638"), show="*", width=280, height=40)
         
         # Lecturer Eye Button
         self.btn_eye_lec = ctk.CTkButton(self.form_frame, text="", image=self.eye_icon, width=30, height=30,
@@ -74,6 +86,10 @@ class LoginFrame(ctk.CTkFrame):
         self.entry_lec_id.bind("<Return>", self.login_event)
         self.entry_lec_pass.bind("<Return>", self.login_event)
         self.lecturer_widgets.extend([self.entry_lec_id, self.entry_lec_pass])
+
+        # Lecturer Labels
+        self.lbl_lec_id = ctk.CTkLabel(self.form_frame, text="Lecturer ID", font=("Roboto", 12))
+        self.lbl_lec_pass = ctk.CTkLabel(self.form_frame, text="Password", font=("Roboto", 12))
 
         # Shared Widgets
         self.options_frame = ctk.CTkFrame(self.card, fg_color="transparent")
@@ -100,13 +116,22 @@ class LoginFrame(ctk.CTkFrame):
             widget.place_forget() # Also clear placed widgets
         
         if value == "Admin":
-            self.entry_admin_user.grid(row=0, column=0, pady=10)
-            self.entry_admin_pass.grid(row=1, column=0, pady=10)
+            self.lbl_admin_user.grid(row=0, column=0, sticky="w", pady=(10, 0))
+            self.entry_admin_user.grid(row=1, column=0, pady=(0, 10))
+            
+            self.lbl_admin_pass.grid(row=2, column=0, sticky="w", pady=(10, 0))
+            self.entry_admin_pass.grid(row=3, column=0, pady=(0, 10))
+            
             # Place the eye button relative to the password entry
             self.btn_eye_admin.place(in_=self.entry_admin_pass, relx=1.0, rely=0.5, x=-5, anchor="e")
+            
         else:
-            self.entry_lec_id.grid(row=0, column=0, pady=10)
-            self.entry_lec_pass.grid(row=1, column=0, pady=10)
+            self.lbl_lec_id.grid(row=0, column=0, sticky="w", pady=(10, 0))
+            self.entry_lec_id.grid(row=1, column=0, pady=(0, 10))
+            
+            self.lbl_lec_pass.grid(row=2, column=0, sticky="w", pady=(10, 0))
+            self.entry_lec_pass.grid(row=3, column=0, pady=(0, 10))
+            
             # Place the eye button relative to the password entry
             self.btn_eye_lec.place(in_=self.entry_lec_pass, relx=1.0, rely=0.5, x=-5, anchor="e")
 

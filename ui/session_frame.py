@@ -23,7 +23,7 @@ class SessionFrame(ctk.CTkFrame):
         self.form_frame.grid_columnconfigure(1, weight=1)
 
         self.entries = {}
-        self.create_entry("Session ID", 0)
+        self.create_entry("Session ID", 0, state="readonly")
         self.create_entry("Title", 1)
         self.create_entry("Department", 2, is_combo=True, state="readonly")
         
@@ -103,6 +103,7 @@ class SessionFrame(ctk.CTkFrame):
         # self.load_sessions() # MOVED TO ON_SHOW
 
     def on_show(self):
+        self.clear_form() # Populate ID
         self.load_sessions()
         # Refresh lecturers dropdown as well
         threading.Thread(target=self._load_lecturers_thread, daemon=True).start()
@@ -286,9 +287,25 @@ class SessionFrame(ctk.CTkFrame):
     def clear_form(self):
         for entry in self.entries.values():
             if isinstance(entry, ctk.CTkEntry):
+                current_state = entry.cget("state")
+                entry.configure(state="normal")
                 entry.delete(0, 'end')
+                if current_state == "readonly" and entry == self.entries.get("session_id"):
+                     entry.configure(state="readonly")
             elif isinstance(entry, ctk.CTkComboBox):
                 entry.set("")
+        
+        # Auto-fill Next ID
+        try:
+            next_id = self.db.get_next_id(COL_SESSIONS, "lecId", "SES")
+            if "session_id" in self.entries:
+                entry = self.entries["session_id"]
+                entry.configure(state="normal")
+                entry.delete(0, 'end')
+                entry.insert(0, next_id)
+                entry.configure(state="readonly")
+        except Exception as e:
+            print(f"Error fetching next ID: {e}")
         # Reset date
         self.entry_date.delete(0, 'end')
         self.entry_date.insert(0, datetime.now().strftime("%Y-%m-%d"))

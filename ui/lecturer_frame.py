@@ -96,6 +96,7 @@ class LecturerFrame(ctk.CTkFrame):
         self.progress.grid_remove()
     
     def on_show(self):
+        self.clear_form()
         self.load_lecturers()
 
     def _create_preview_label(self):
@@ -289,6 +290,18 @@ class LecturerFrame(ctk.CTkFrame):
         self.selected_image_path = None
         self.lbl_image_path.configure(text="No file selected")
         self._update_preview(None)
+        
+        # Auto-fill Next ID
+        try:
+            next_id = self.db.get_next_id(COL_LECTURERS, "lecturerId", "LEC")
+            if "lecturer_id" in self.entries:
+                entry = self.entries["lecturer_id"]
+                entry.configure(state="normal")
+                entry.delete(0, 'end')
+                entry.insert(0, next_id)
+                entry.configure(state="readonly")
+        except Exception as e:
+            print(f"Error fetching next ID: {e}")
         
         # Show Save button again, hide others
         self.btn_save.grid()
