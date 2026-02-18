@@ -219,7 +219,11 @@ class LecturerFrame(ctk.CTkFrame):
         
         # Validation
         if not data["lecturer_name"] or not data["email"] or not data["password"]:
-             messagebox.showwarning("Validation Error", "Name, Email and Password are required!")
+             missing_fields = []
+             if not data["lecturer_name"]: missing_fields.append("Name")
+             if not data["email"]: missing_fields.append("Email")
+             if not data["password"]: missing_fields.append("Password")
+             messagebox.showwarning("Validation Error", f"Missing fields: {', '.join(missing_fields)}")
              return
         
         update_data = {
@@ -256,7 +260,13 @@ class LecturerFrame(ctk.CTkFrame):
         # Validation (Exclude ID)
         required_fields = {k: v for k, v in data.items() if k != "lecturer_id"}
         if not all(required_fields.values()) or not self.selected_image_path:
-            messagebox.showwarning("Validation Error", "All fields and photo are required!")
+            missing_fields = []
+            if not data["lecturer_name"]: missing_fields.append("Name")
+            if not data["email"]: missing_fields.append("Email")
+            if not data["password"]: missing_fields.append("Password")
+            if not self.selected_image_path: missing_fields.append("Photo")
+            
+            messagebox.showwarning("Validation Error", f"Missing fields: {', '.join(missing_fields)}")
             return
 
         lec_id = data["lecturer_id"]

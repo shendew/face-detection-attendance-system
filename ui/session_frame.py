@@ -189,25 +189,38 @@ class SessionFrame(ctk.CTkFrame):
         
         session = self.db.find_document(COL_SESSIONS, {"lecId": str(sess_id)})
         if session:
+            self.entries["session_id"].configure(state="normal")
             self.entries["session_id"].delete(0, 'end')
             self.entries["session_id"].insert(0, session.get("lecId", ""))
+            self.entries["session_id"].configure(state="readonly")
             
             self.entries["title"].delete(0, 'end')
             self.entries["title"].insert(0, session.get("lecTitle", ""))
             
+            self.entries["department"].configure(state="normal")
             self.entries["department"].set(session.get("lecDept", ""))
+            self.entries["department"].configure(state="readonly")
             
             self.entry_date.delete(0, 'end')
             self.entry_date.insert(0, session.get("lecDate", ""))
 
+
             # Try to select lecturer in combo
             lec_id = session.get("lecturerId", "")
             # Find matching value in combo options
-            for val in self.combo_lecturer.cget("values"):
-                if val.startswith(lec_id):
-                    self.combo_lecturer.set(val)
-                    break
+            found_lec = False
+            current_values = self.combo_lecturer.cget("values")
+            if current_values:
+                for val in current_values:
+                    if val.startswith(lec_id):
+                        self.combo_lecturer.set(val)
+                        found_lec = True
+                        break
             
+            if not found_lec:
+                 # Set raw ID if not found in list (better than empty)
+                 self.combo_lecturer.set(lec_id if lec_id else "")
+
             # Toggle buttons
             self.btn_save.grid_remove()
             self.btn_update.grid(row=0, column=0, padx=(10, 5), sticky="ew")
@@ -224,8 +237,15 @@ class SessionFrame(ctk.CTkFrame):
         date_str = self.entry_date.get()
         
         # Validation
-        if not data["title"] or not data["department"] or not date_str or not lec_selection or lec_selection == "No Lecturers Found":
-             messagebox.showwarning("Validation Error", "All fields are required!")
+        # Validation
+        missing_fields = []
+        if not data["title"]: missing_fields.append("Title")
+        if not data["department"]: missing_fields.append("Department")
+        if not date_str: missing_fields.append("Date")
+        if not lec_selection or lec_selection == "No Lecturers Found": missing_fields.append("Lecturer")
+
+        if missing_fields:
+             messagebox.showwarning("Validation Error", f"Missing fields: {', '.join(missing_fields)}")
              return
 
         lecturer_id = lec_selection.split(" - ")[0] if lec_selection and lec_selection != "No Lecturers Found" else ""
@@ -264,8 +284,14 @@ class SessionFrame(ctk.CTkFrame):
         date_str = self.entry_date.get()
 
         if not all(data.values()) or not lec_selection or lec_selection == "No Lecturers Found":
-            messagebox.showwarning("Validation Error", "All fields are required!")
-            return
+             missing_fields = []
+             if not data["title"]: missing_fields.append("Title")
+             if not data["department"]: missing_fields.append("Department")
+             if not date_str: missing_fields.append("Date")
+             if not lec_selection or lec_selection == "No Lecturers Found": missing_fields.append("Lecturer")
+             
+             messagebox.showwarning("Validation Error", f"Missing fields: {', '.join(missing_fields)}")
+             return
 
         lecturer_id = lec_selection.split(" - ")[0]
 

@@ -286,8 +286,13 @@ class StudentFrame(ctk.CTkFrame):
             self.entries["email"].delete(0, 'end')
             self.entries["email"].insert(0, student.get("userEmail", ""))
             
+            self.entries["batch"].configure(state="normal")
             self.entries["batch"].set(student.get("UserBatch", ""))
+            self.entries["batch"].configure(state="readonly")
+            
+            self.entries["department"].configure(state="normal")
             self.entries["department"].set(student.get("UserDept", ""))
+            self.entries["department"].configure(state="readonly")
             
             self.entries["contact"].delete(0, 'end')
             self.entries["contact"].insert(0, student.get("userContact", ""))
@@ -315,7 +320,12 @@ class StudentFrame(ctk.CTkFrame):
         
         # Validation
         if not data["full_name"] or not data["batch"] or not data["department"] or not data["contact"]:
-             messagebox.showwarning("Validation Error", "Name, Batch, Department and Contact are required!")
+             missing_fields = []
+             if not data["full_name"]: missing_fields.append("Name")
+             if not data["batch"]: missing_fields.append("Batch")
+             if not data["department"]: missing_fields.append("Department")
+             if not data["contact"]: missing_fields.append("Contact")
+             messagebox.showwarning("Validation Error", f"Missing fields: {', '.join(missing_fields)}")
              return
 
         if len(data["contact"]) != 10:
@@ -388,8 +398,14 @@ class StudentFrame(ctk.CTkFrame):
         # Check all required fields (Exclude ID as it is auto-generated)
         required_fields = {k: v for k, v in data.items() if k != "user_id"}
         if not all(required_fields.values()) or not self.selected_image_path:
-            messagebox.showwarning("Validation Error", "All fields and photo are required!")
-            return
+             missing_fields = []
+             if not data["full_name"]: missing_fields.append("Name")
+             if not data["batch"]: missing_fields.append("Batch")
+             if not data["department"]: missing_fields.append("Department")
+             if not data["contact"]: missing_fields.append("Contact")
+             if not self.selected_image_path: missing_fields.append("Photo")
+             messagebox.showwarning("Validation Error", f"Missing fields: {', '.join(missing_fields)}")
+             return
 
         if len(data["contact"]) != 10:
              messagebox.showwarning("Validation Error", "Contact number must be exactly 10 digits!")
