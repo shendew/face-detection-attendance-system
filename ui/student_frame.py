@@ -1,7 +1,7 @@
 
 import customtkinter as ctk
 from tkinter import filedialog, messagebox, ttk
-from config import COL_STUDENTS, COL_BATCHES, COL_DEPARTMENTS
+from config import COL_STUDENTS, COL_BATCHES, COL_DEPARTMENTS, COL_ATTENDANCE
 from database.db_handler import DatabaseHandler
 from logic.face_handler import FaceHandler
 from logic.validators import validate_email, validate_non_empty
@@ -384,6 +384,9 @@ class StudentFrame(ctk.CTkFrame):
             return
 
         if messagebox.askyesno("Confirm", "Are you sure you want to delete this student?"):
+            # Cascade delete attendance
+            self.db.delete_many_documents(COL_ATTENDANCE, {"userId": user_id})
+            
             if self.db.delete_document(COL_STUDENTS, {"userId": user_id}):
                 messagebox.showinfo("Success", "Student deleted.")
                 self.load_students()

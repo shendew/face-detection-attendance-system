@@ -54,6 +54,11 @@ class DatabaseHandler:
         result = col.delete_one(query)
         return result.deleted_count > 0
 
+    def delete_many_documents(self, collection_name, query):
+        col = self.get_collection(collection_name)
+        result = col.delete_many(query)
+        return result.deleted_count
+
     def get_next_id(self, collection_name, id_field, prefix):
         col = self.get_collection(collection_name)
         # Find the last ID that starts with the prefix

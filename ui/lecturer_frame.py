@@ -1,7 +1,7 @@
 
 import customtkinter as ctk
 from tkinter import filedialog, messagebox, ttk
-from config import COL_LECTURERS
+from config import COL_LECTURERS, COL_SESSIONS, COL_ATTENDANCE
 from database.db_handler import DatabaseHandler
 import os
 import threading
@@ -247,6 +247,12 @@ class LecturerFrame(ctk.CTkFrame):
             return
 
         if messagebox.askyesno("Confirm", "Are you sure you want to delete this lecturer?"):
+            # Cascade: Delete all sessions and their attendance
+            sessions = self.db.find_all_documents(COL_SESSIONS, {"lecturerId": lec_id})
+            for s in sessions:
+                self.db.delete_many_documents(COL_ATTENDANCE, {"lecId": s["lecId"]})
+                self.db.delete_document(COL_SESSIONS, {"lecId": s["lecId"]})
+
             if self.db.delete_document(COL_LECTURERS, {"lecturerId": lec_id}):
                 messagebox.showinfo("Success", "Lecturer deleted.")
                 self.load_lecturers()

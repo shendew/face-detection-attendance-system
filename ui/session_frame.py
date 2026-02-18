@@ -1,7 +1,7 @@
 
 import customtkinter as ctk
 from tkinter import messagebox, ttk
-from config import COL_SESSIONS, COL_LECTURERS, COL_DEPARTMENTS
+from config import COL_SESSIONS, COL_LECTURERS, COL_DEPARTMENTS, COL_ATTENDANCE
 from database.db_handler import DatabaseHandler
 import threading
 from datetime import datetime
@@ -271,6 +271,9 @@ class SessionFrame(ctk.CTkFrame):
             return
 
         if messagebox.askyesno("Confirm", "Are you sure you want to delete this session?"):
+            # Cascading delete: Remove attendance records first
+            self.db.delete_many_documents(COL_ATTENDANCE, {"lecId": sess_id})
+            
             if self.db.delete_document(COL_SESSIONS, {"lecId": sess_id}):
                 messagebox.showinfo("Success", "Session deleted.")
                 self.load_sessions()

@@ -169,6 +169,7 @@ class AttendanceFrame(ctk.CTkFrame):
                     self.on_session_change(session_values[0])
                 else:
                     self.combo_session.set("No Sessions")
+                    self.on_session_change("No Sessions")
 
             self.after(0, update_ui)
         except Exception as e:
@@ -177,6 +178,14 @@ class AttendanceFrame(ctk.CTkFrame):
 
     def on_session_change(self, selection):
         if not selection or selection == "No Sessions" or selection == "Loading...":
+            self.current_session = None
+            for item in self.live_list.get_children():
+                self.live_list.delete(item)
+            self.marked_users = set()
+            self.lbl_det_name.configure(text="Name: -")
+            self.lbl_det_id.configure(text="ID: -")
+            self.lbl_det_dept.configure(text="Dept: -")
+            self.lbl_det_image.configure(image=None, text="[No Photo]")
             return
         
         session_id = selection.split(" - ")[0]
@@ -448,9 +457,16 @@ class AttendanceFrame(ctk.CTkFrame):
         if not selected:
             return
         
-        # Values: ID, Name, Time
-        values = self.live_list.item(selected)["values"]
-        if not values:
+        if not selected:
+            return
+        
+        try:
+            # Values: ID, Name, Time
+            values = self.live_list.item(selected[0])["values"]
+            if not values:
+                return 
+        except Exception:
+            # If item deleted or invalid
             return 
             
         user_id = str(values[0]) # ID is 1st
