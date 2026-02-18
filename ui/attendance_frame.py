@@ -136,6 +136,10 @@ class AttendanceFrame(ctk.CTkFrame):
     def cleanup(self):
         """Releases resources when frame is destroyed"""
         self.stop_attendance()
+        self.is_running = False # Force stop threads
+        if self.cap:
+             self.cap.release()
+             self.cap = None
 
     def on_show(self):
         self.refresh_sessions_async()
@@ -424,6 +428,9 @@ class AttendanceFrame(ctk.CTkFrame):
                 print(f"Error logging attendance: {e}")
 
     def _add_to_live_list_safe(self, name, time_str, user_id):
+        if not self.winfo_exists():
+            return
+
         # Allow checking cache for name if "Unknown" passed
         if name == "Unknown" and user_id in self.students_cache:
             name = self.students_cache[user_id]["name"]
@@ -483,6 +490,7 @@ class AttendanceFrame(ctk.CTkFrame):
             dept = student.get("UserDept", "-") if student else "-"
             
             self.after(0, lambda: self.lbl_det_name.configure(text=f"Name: {name}"))
+            self.after(0, lambda: self.lbl_det_id.configure(text=f"ID: {user_id}"))
             self.after(0, lambda: self.lbl_det_dept.configure(text=f"Dept: {dept}"))
             
             # Update Image

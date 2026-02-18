@@ -202,7 +202,11 @@ class LecturerDashboardFrame(ctk.CTkFrame):
 
     def _perform_logout(self):
         print("DEBUG: Performing logout cleanup")
-        SessionManager.clear_session()
+        try:
+            SessionManager.clear_session()
+        except Exception as e:
+            print(f"Error clearing session: {e}")
+            
         self.controller.current_user = None
         print("DEBUG: Switching to LoginFrame")
         self.controller.show_frame("LoginFrame")

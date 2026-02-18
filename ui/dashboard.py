@@ -103,9 +103,13 @@ class DashboardFrame(ctk.CTkFrame):
 
     def _perform_logout(self):
         print("DEBUG: Performing Admin logout")
-        self.cleanup()
-        from logic.session_manager import SessionManager
-        SessionManager.clear_session()
+        # self.cleanup() # REMOVED: Redundant, handled by App.show_frame
+        try:
+            from logic.session_manager import SessionManager
+            SessionManager.clear_session()
+        except Exception as e:
+            print(f"Error clearing session: {e}")
+            
         print("DEBUG: Switching to LoginFrame")
         self.controller.show_frame("LoginFrame")
 
