@@ -79,9 +79,9 @@ class LecturerFrame(ctk.CTkFrame):
         self.tree.heading("ID", text="ID")
         self.tree.heading("Name", text="Name")
         self.tree.heading("Email", text="Email")
-        self.tree.column("ID", width=100)
-        self.tree.column("Name", width=200)
-        self.tree.column("Email", width=200)
+        self.tree.column("ID", width=80)
+        self.tree.column("Name", width=220)
+        self.tree.column("Email", width=230)
         
         self.tree.grid(row=0, column=0, sticky="nsew")
         self.tree.bind("<<TreeviewSelect>>", self.on_select)

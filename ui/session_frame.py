@@ -84,8 +84,8 @@ class SessionFrame(ctk.CTkFrame):
         self.tree.heading("Title", text="Title")
         self.tree.heading("Dept", text="Dept")
         self.tree.heading("Date", text="Date")
-        self.tree.column("ID", width=80)
-        self.tree.column("Title", width=150)
+        self.tree.column("ID", width=60)
+        self.tree.column("Title", width=250)
         self.tree.column("Dept", width=80)
         self.tree.column("Date", width=100)
         

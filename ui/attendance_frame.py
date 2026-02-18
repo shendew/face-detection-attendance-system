@@ -95,9 +95,9 @@ class AttendanceFrame(ctk.CTkFrame):
         self.live_list.heading("ID", text="Student ID")
         self.live_list.heading("Name", text="Name")
         self.live_list.heading("Time", text="Time")
-        self.live_list.column("ID", width=80)
-        self.live_list.column("Name", width=120)
-        self.live_list.column("Time", width=80)
+        self.live_list.column("ID", width=80, anchor="center")
+        self.live_list.column("Name", width=200, anchor="center")
+        self.live_list.column("Time", width=100, anchor="center")
         self.live_list.grid(row=1, column=0, sticky="nsew", padx=5)
         self.live_list.bind("<<TreeviewSelect>>", self.on_live_select)
 
@@ -520,6 +520,9 @@ class AttendanceFrame(ctk.CTkFrame):
         tree.heading("ID", text="Student ID")
         tree.heading("Name", text="Name")
         tree.heading("Time", text="Timestamp")
+        tree.column("ID", width=80, anchor="center")
+        tree.column("Name", width=200, anchor="center")
+        tree.column("Time", width=150, anchor="center")
         tree.pack(fill="both", expand=True, padx=10, pady=10)
         
         # Fetch Data in BG
