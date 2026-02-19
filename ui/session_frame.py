@@ -307,6 +307,9 @@ class SessionFrame(ctk.CTkFrame):
         }
 
         if self.db.insert_document(COL_SESSIONS, session_doc):
+            # Safety: Ensure no orphaned attendance records exist for this new session ID
+            self.db.delete_many_documents(COL_ATTENDANCE, {"lecId": data["session_id"]})
+            
             messagebox.showinfo("Success", "Session created successfully!")
             self.load_sessions()
             self.clear_form()
